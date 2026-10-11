@@ -16,7 +16,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/wallet', name: 'wallet', component: () => import('./pages/WalletPage.vue') },
   { path: '/settings', name: 'settings', component: () => import('./pages/SettingsPage.vue') },
   { path: '/u/:id', name: 'profile', component: () => import('./pages/ProfilePage.vue') },
-  { path: '/admin', name: 'admin', component: () => import('./pages/AdminPage.vue'), meta: { admin: true } },
+  { path: '/admin', name: 'admin', component: () => import('./pages/AdminPage.vue'), meta: { public: true } },
   { path: '/privacy', name: 'privacy', component: () => import('./pages/legal/PrivacyPage.vue'), meta: { public: true } },
   { path: '/terms', name: 'terms', component: () => import('./pages/legal/TermsPage.vue'), meta: { public: true } },
   { path: '/imprint', name: 'imprint', component: () => import('./pages/legal/ImprintPage.vue'), meta: { public: true } },
@@ -34,7 +34,6 @@ router.beforeEach(async (to) => {
   await session.ensureLoaded().catch(() => {})
   if (to.meta.public) return true
   if (!session.me) return { name: 'landing', query: { returnTo: to.fullPath } }
-  if (to.meta.admin && session.me.role !== 'admin') return { name: 'browse' }
   // First visit after sign-up: show the short tutorial once.
   if (!session.me.onboarded && to.name !== 'tutorial') return { name: 'tutorial' }
   return true

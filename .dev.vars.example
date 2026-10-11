@@ -10,3 +10,5 @@ B2_APP_KEY=
 # Optional email via Resend (needs a verified domain)
 RESEND_API_KEY=
 MAIL_FROM=
+# Admin panel password (Basic Auth, any user name). Admin is off while empty.
+BASIC_AUTH_PASSWORD=

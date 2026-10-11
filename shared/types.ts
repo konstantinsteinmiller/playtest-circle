@@ -21,6 +21,8 @@ export interface Me {
   recordingBytes: number
   /** Cheat Credits removed after the testing period, not yet acknowledged. */
   cheatRemoved: number
+  /** Admin warnings the user hasn't acknowledged yet. */
+  warnings: { id: string; reason: string; createdAt: number }[]
 }
 
 export interface PublicUser {

@@ -97,7 +97,8 @@
     "statWelcome": "Credits to start",
     "statRecordings": "days until recordings are deleted",
     "statOpen": "open source",
-    "gated": "Members only: Google sign-in is the only way in."
+    "gated": "Members only: Google sign-in is the only way in.",
+    "banned": "This account has been banned for misusing the platform."
   },
   "tutorial": {
     "title": "How Playtest Circle works",
@@ -761,7 +762,15 @@
     "unhide": "Unhide",
     "email": "Email",
     "name": "Name",
-    "balance": "Balance"
+    "balance": "Balance",
+    "warn": "Warn",
+    "warnPrompt": "Warning for {name}: what did they do wrong? They must read and acknowledge it.",
+    "banPrompt": "Ban {name}? Optional reason (kept for your records):",
+    "warnings": "Warnings",
+    "bannedChip": "Banned",
+    "authRequired": "The admin panel needs the admin password. Reload the page to enter it.",
+    "disabled": "The admin panel is off. Set BASIC_AUTH_PASSWORD to enable it.",
+    "reason": "Reason: {reason}"
   },
   "legal": {
     "privacyTitle": "Privacy",
@@ -848,5 +857,10 @@
     "removed": "The testing period is over: {n} cheated Credits were removed from your balance.",
     "ended": "The cheat ended with the testing period.",
     "dismiss": "Dismiss"
+  },
+  "warning": {
+    "title": "Warning from the Playtest Circle team",
+    "lead": "Please read this. Repeated misuse can get your account banned.",
+    "ack": "I understand"
   }
 }

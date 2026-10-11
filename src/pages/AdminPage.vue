@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { api } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 import { formatBytes } from '@/lib/format'
 
 interface AdminUser {
@@ -13,7 +13,9 @@ interface AdminUser {
   rep_up: number
   rep_down: number
   banned_at: number | null
+  ban_reason: string | null
   paid_tests: number
+  warnings: number
 }
 interface AdminCampaign {
   id: string
@@ -31,8 +33,17 @@ const users = ref<AdminUser[]>([])
 const campaigns = ref<AdminCampaign[]>([])
 const storage = ref({ bytes: 0, n: 0, budget: 1 })
 
+const blocked = ref<'' | 'auth' | 'disabled'>('')
+
 async function load() {
-  const r = await api<{ users: AdminUser[]; campaigns: AdminCampaign[]; storage: { bytes: number; n: number; budget: number } }>('/admin/overview')
+  let r
+  try {
+    r = await api<{ users: AdminUser[]; campaigns: AdminCampaign[]; storage: { bytes: number; n: number; budget: number } }>('/admin/overview')
+  } catch (e) {
+    blocked.value = e instanceof ApiError && e.status === 404 ? 'disabled' : 'auth'
+    return
+  }
+  blocked.value = ''
   users.value = r.users
   campaigns.value = r.campaigns
   storage.value = r.storage
@@ -46,7 +57,19 @@ async function grant(u: AdminUser) {
   await load()
 }
 async function ban(u: AdminUser) {
-  await api(`/admin/users/${u.id}/ban`, { method: 'POST', json: { banned: !u.banned_at } })
+  let reason = ''
+  if (!u.banned_at) {
+    const answer = window.prompt(t('admin.banPrompt', { name: u.name }), '')
+    if (answer === null) return
+    reason = answer
+  }
+  await api(`/admin/users/${u.id}/ban`, { method: 'POST', json: { banned: !u.banned_at, reason } })
+  await load()
+}
+async function warn(u: AdminUser) {
+  const reason = window.prompt(t('admin.warnPrompt', { name: u.name }), '')
+  if (!reason || reason.trim().length < 3) return
+  await api(`/admin/users/${u.id}/warn`, { method: 'POST', json: { reason } })
   await load()
 }
 async function hide(c: AdminCampaign) {
@@ -58,6 +81,10 @@ async function hide(c: AdminCampaign) {
 <template>
   <div class="space-y-8">
     <h1 class="h1">{{ $t('admin.title') }}</h1>
+    <p v-if="blocked" class="card p-5 font-semibold text-warn-ink" role="alert" data-testid="admin-blocked">
+      {{ blocked === 'disabled' ? $t('admin.disabled') : $t('admin.authRequired') }}
+    </p>
+    <template v-else>
     <p class="card p-4 font-semibold">{{ $t('admin.storage', { used: formatBytes(storage.bytes), budget: formatBytes(storage.budget) }) }} ({{ storage.n }})</p>
     <section class="space-y-3">
       <h2 class="h2">{{ $t('admin.users') }}</h2>
@@ -69,18 +96,24 @@ async function hide(c: AdminCampaign) {
               <th class="p-3">{{ $t('admin.email') }}</th>
               <th class="p-3">{{ $t('admin.balance') }}</th>
               <th class="p-3">{{ $t('profile.tests') }}</th>
+              <th class="p-3">{{ $t('admin.warnings') }}</th>
               <th class="p-3"><span class="sr-only">{{ $t('common.edit') }}</span></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="u in users" :key="u.id" class="border-b border-line last:border-0">
-              <td class="p-3 font-semibold">{{ u.name }} <span v-if="u.banned_at" class="chip text-danger-ink">{{ $t('admin.ban') }}</span></td>
+              <td class="p-3 font-semibold">
+                {{ u.name }} <span v-if="u.banned_at" class="chip text-danger-ink">{{ $t('admin.bannedChip') }}</span>
+                <span v-if="u.ban_reason" class="block text-sm font-normal text-muted">{{ $t('admin.reason', { reason: u.ban_reason }) }}</span>
+              </td>
               <td class="p-3">{{ u.email }}</td>
               <td class="p-3 font-mono">{{ u.credits }}</td>
               <td class="p-3">{{ u.paid_tests }}</td>
+              <td class="p-3" data-testid="warn-count">{{ u.warnings }}</td>
               <td class="flex gap-2 p-3">
                 <button type="button" class="btn btn-secondary min-h-9 py-1" @click="grant(u)">{{ $t('admin.grant') }}</button>
-                <button v-if="u.role !== 'admin'" type="button" class="btn btn-danger min-h-9 py-1" @click="ban(u)">{{ u.banned_at ? $t('admin.unban') : $t('admin.ban') }}</button>
+                <button type="button" class="btn btn-secondary min-h-9 py-1" data-testid="warn" @click="warn(u)">{{ $t('admin.warn') }}</button>
+                <button v-if="u.role !== 'admin'" type="button" class="btn btn-danger min-h-9 py-1" data-testid="ban" @click="ban(u)">{{ u.banned_at ? $t('admin.unban') : $t('admin.ban') }}</button>
               </td>
             </tr>
           </tbody>
@@ -97,5 +130,6 @@ async function hide(c: AdminCampaign) {
         </li>
       </ul>
     </section>
+    </template>
   </div>
 </template>

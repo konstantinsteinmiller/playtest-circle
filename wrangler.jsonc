@@ -64,6 +64,7 @@
         "MAIL_FROM_NAME": "Playtest Circle",
         "DEV_LOGIN": "1",
         "TEST_MINUTE_MS": "1000",
+        "BASIC_AUTH_PASSWORD": "e2e-admin-password",
         "SESSION_SECRET": "e2e-only-secret-0123456789abcdef",
         "ADMIN_EMAILS": "admin@example.com",
         "GITHUB_URL": "https://github.com/konstantinsteinmiller/playtest-circle",

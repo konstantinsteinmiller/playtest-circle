@@ -41,6 +41,11 @@ meRoutes.get('/me', async (c) => {
     onboarded: !!u.onboarded_at,
     recordingBytes: await ownerRecordingBytes(c.env.DB, s.id),
     cheatRemoved: (u.cheat_notice as number) ?? 0,
+    warnings: (
+      await c.env.DB.prepare('SELECT id, reason, created_at FROM user_warnings WHERE user_id = ? AND seen_at IS NULL ORDER BY created_at')
+        .bind(s.id)
+        .all<{ id: string; reason: string; created_at: number }>()
+    ).results.map((w) => ({ id: w.id, reason: w.reason, createdAt: w.created_at })),
   }
   return c.json({ user: me, banned: s.banned })
 })
@@ -114,6 +119,13 @@ export async function clawBackCheats(db: D1Database, userId: string) {
       .bind(newId(), userId, -take, now()),
   ])
 }
+
+meRoutes.post('/me/warnings/:id/ack', async (c) => {
+  const s = c.get('user')
+  if (!s) fail(401, 'unauthenticated')
+  await c.env.DB.prepare('UPDATE user_warnings SET seen_at = ? WHERE id = ? AND user_id = ? AND seen_at IS NULL').bind(now(), c.req.param('id'), s.id).run()
+  return c.json({ ok: true })
+})
 
 meRoutes.post('/me/cheat', async (c) => {
   const u = requireUser(c)

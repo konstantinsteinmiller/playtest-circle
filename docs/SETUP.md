@@ -100,3 +100,7 @@ Then set `APP_URL` in `wrangler.jsonc` to the deployed URL and deploy again. The
 ## 6. Admin
 
 Every email in `ADMIN_EMAILS` gets the Admin page. From there you can grant Credits (for example to seed the first devs), ban members and hide campaigns.
+
+## Admin panel
+
+The admin panel at `/admin` is protected with HTTP Basic Auth (any user name). Set the password locally in `.dev.vars` as `BASIC_AUTH_PASSWORD=...` and in production with `npx wrangler secret put BASIC_AUTH_PASSWORD`. While it is unset, the admin API answers 404.

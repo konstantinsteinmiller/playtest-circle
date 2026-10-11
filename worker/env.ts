@@ -15,6 +15,8 @@ export interface Env {
   B2_REGION: string
   B2_KEY_ID: string
   B2_APP_KEY: string
+  /** Password for the admin panel (HTTP Basic Auth, any user name). Admin is disabled while unset. */
+  BASIC_AUTH_PASSWORD?: string
   MAIL_DRIVER?: 'gmail' | 'resend' | 'none'
   SMTP_USER?: string
   SMTP_PASS?: string

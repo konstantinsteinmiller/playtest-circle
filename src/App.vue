@@ -2,6 +2,7 @@
 import AppFooter from './components/AppFooter.vue'
 import AppHeader from './components/AppHeader.vue'
 import AppToasts from './components/AppToasts.vue'
+import AppWarnings from './components/AppWarnings.vue'
 </script>
 
 <template>
@@ -12,5 +13,6 @@ import AppToasts from './components/AppToasts.vue'
     </main>
     <AppFooter />
     <AppToasts />
+    <AppWarnings />
   </div>
 </template>
