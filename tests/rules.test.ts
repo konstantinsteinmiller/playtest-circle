@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { priceAdvice,
+import { priceAdvice, contiguousParts, normalizeSocialUrl,
   PRICE_MAX,
   PRICE_MIN,
   RECORDING,
@@ -134,5 +134,27 @@ describe('priceAdvice', () => {
     expect(priceAdvice(5, 'quick').tier).toBe('low')
     expect(priceAdvice(15, 'standard').tier).toBe('under')
     expect(priceAdvice(60, 'deep').tier).toBe('fast')
+  })
+})
+
+describe('contiguousParts', () => {
+  it('keeps the unbroken run from part 1', () => {
+    const p = (n: number) => ({ partNumber: n, etag: `e${n}` })
+    expect(contiguousParts([p(2), p(1), p(4)]).map((x) => x.partNumber)).toEqual([1, 2])
+    expect(contiguousParts([p(2), p(3)])).toEqual([])
+  })
+})
+
+describe('normalizeSocialUrl', () => {
+  it('accepts posts on social networks and strips tracking', () => {
+    expect(normalizeSocialUrl('https://www.x.com/me/status/123?s=20&t=abc')).toBe('https://x.com/me/status/123')
+    expect(normalizeSocialUrl('https://bsky.app/profile/me.bsky.social/post/3k')).toBe('https://bsky.app/profile/me.bsky.social/post/3k')
+    expect(normalizeSocialUrl('https://mastodon.gamedev.place/@me/1')).toBe('https://mastodon.gamedev.place/@me/1')
+  })
+  it('rejects other links', () => {
+    expect(normalizeSocialUrl('https://example.com/post/1')).toBeNull()
+    expect(normalizeSocialUrl('http://x.com/me/status/1')).toBeNull()
+    expect(normalizeSocialUrl('https://x.com/')).toBeNull()
+    expect(normalizeSocialUrl('not a url')).toBeNull()
   })
 })

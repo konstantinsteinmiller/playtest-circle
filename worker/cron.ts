@@ -1,5 +1,5 @@
 import { EXPIRY_WARNING_MS } from '../shared/rules'
-import { deleteRecording, enforceStorageBudget, releaseSlot, type PlaytestDbRow } from './domain'
+import { deleteRecording, enforceStorageBudget, recordingExpiry, releaseSlot, salvageUpload, type PlaytestDbRow } from './domain'
 import type { Env } from './env'
 import { now } from './lib'
 import { notify } from './notify'
@@ -17,6 +17,27 @@ export async function runCron(env: Env) {
     .bind(t)
     .all<PlaytestDbRow>()
   for (const p of stale) {
+    // An interrupted recording (lost connection, crash, PC restart) keeps what reached storage.
+    // The dev can watch it; no Credits move, so it costs them nothing.
+    if (p.status === 'recording' && p.recording_key && p.upload_id) {
+      const bytes = await salvageUpload(st, p.recording_key, p.upload_id)
+      if (bytes > 0) {
+        await env.DB.prepare(
+          `UPDATE playtests SET status = 'no_payout', payout_reason = 'interrupted', upload_id = NULL, recording_bytes = ?,
+             recording_expires_at = ?, stopped_at = COALESCE(stopped_at, ?), submitted_at = ? WHERE id = ?`,
+        )
+          .bind(bytes, recordingExpiry(t), t, t, p.id)
+          .run()
+        await releaseSlot(env, p.campaign_id)
+        const info = await env.DB.prepare(
+          'SELECT c.owner_id, g.title, u.name FROM campaigns c JOIN games g ON g.id = c.game_id JOIN users u ON u.id = ? WHERE c.id = ?',
+        )
+          .bind(p.tester_id, p.campaign_id)
+          .first<{ owner_id: string; title: string; name: string }>()
+        if (info) await notify(env, info.owner_id, 'playtest_received', { game: info.title, tester: info.name }, `/studio/playtests/${p.id}`)
+        continue
+      }
+    }
     await deleteRecording(env, st, p, 'abandoned')
     await env.DB.prepare("UPDATE playtests SET status = 'expired', upload_id = NULL WHERE id = ?").bind(p.id).run()
     await releaseSlot(env, p.campaign_id)

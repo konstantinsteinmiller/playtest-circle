@@ -11,6 +11,8 @@ export interface StorageDriver extends ObjectFetcher {
   partUrl(key: string, uploadId: string, partNumber: number, ttlSec?: number): Promise<string>
   completeMultipart(key: string, uploadId: string, parts: UploadedPart[]): Promise<void>
   abortMultipart(key: string, uploadId: string): Promise<void>
+  /** Parts the storage actually holds for an open upload (source of truth over what the client reports). */
+  listParts(key: string, uploadId: string): Promise<UploadedPart[]>
   size(key: string): Promise<number | null>
   delete(key: string): Promise<void>
 }

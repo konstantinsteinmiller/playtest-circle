@@ -42,6 +42,7 @@ const micLevel = ref(0)
 const hasMic = ref(false)
 const upload = ref({ parts: 0, uploading: false, retrying: false })
 const parts = ref<UploadedPart[]>([])
+const uploadError = ref('')
 const recorderMs = ref(0)
 
 const notes = ref<Note[]>([])
@@ -192,6 +193,7 @@ async function finishRecording() {
   elapsed.value = recorderMs.value
   await api(`/playtests/${id}/recording/stop`, { method: 'POST', json: { recorderMs: recorderMs.value } }).catch(() => {})
   parts.value = await recorder.stop()
+  uploadError.value = recorder.lastUploadError
   phase.value = 'questionnaire'
 }
 
@@ -201,7 +203,7 @@ async function submit() {
   try {
     const r = await api<{ reason: PayoutReason; credits: number }>(`/playtests/${id}/submit`, {
       method: 'POST',
-      json: { answers: answerList.value, parts: parts.value, recorderMs: recorderMs.value },
+      json: { answers: answerList.value, parts: parts.value, recorderMs: recorderMs.value, uploadError: uploadError.value },
     })
     result.value = r
     draft.discard()
@@ -230,6 +232,7 @@ const resultText = computed(() => {
     incomplete: t('play.resultIncomplete'),
     no_recording: t('play.resultNoRecording'),
     implausible_recording: t('play.resultImplausible'),
+    interrupted: t('play.resultInterrupted'),
   }
   return map[r.reason]
 })

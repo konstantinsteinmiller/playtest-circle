@@ -38,6 +38,15 @@ app.route('/campaigns', campaignRoutes)
 app.route('/playtests', playtestRoutes)
 app.route('/admin', adminRoutes)
 
+/** e2e only (DEV_LOGIN=1): time out one playtest's reservation and run the hourly job now. */
+app.post('/dev/expire-and-cron', async (c) => {
+  if (c.env.DEV_LOGIN !== '1') return c.json({ error: 'not_found' }, 404)
+  const { playtestId } = (await c.req.json()) as { playtestId: string }
+  await c.env.DB.prepare('UPDATE playtests SET reserved_until = 0 WHERE id = ?').bind(playtestId).run()
+  await runCron(c.env)
+  return c.json({ ok: true })
+})
+
 app.notFound((c) => c.json({ error: 'not_found' }, 404))
 app.onError((err, c) => {
   if (err instanceof HTTPException) return c.json({ error: err.message }, err.status)

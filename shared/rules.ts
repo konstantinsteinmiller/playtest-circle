@@ -82,7 +82,7 @@ export function validateSlots(slots: number): boolean {
   return Number.isInteger(slots) && slots >= SLOTS_MIN && slots <= SLOTS_MAX
 }
 
-export type PayoutReason = 'paid' | 'quit_early' | 'incomplete' | 'no_recording' | 'implausible_recording'
+export type PayoutReason = 'paid' | 'quit_early' | 'incomplete' | 'no_recording' | 'implausible_recording' | 'interrupted'
 
 export interface PayoutInput {
   minMinutes: number
@@ -169,4 +169,46 @@ export function priceAdvice(price: number, preset: PlaytimePresetId) {
   const fast = Math.min(PRICE_MAX, Math.ceil(fair * 1.5))
   const tier: PriceTier = price < fair * 0.6 ? 'low' : price < fair ? 'under' : price < fast ? 'fair' : 'fast'
   return { fair, fast, tier }
+}
+
+/**
+ * Multipart parts usable as a video: the unbroken run from part 1. A gap (a part that never arrived)
+ * would corrupt everything after it, so later parts are dropped.
+ */
+export function contiguousParts<T extends { partNumber: number }>(parts: T[]): T[] {
+  const byNumber = new Map(parts.map((p) => [p.partNumber, p]))
+  const out: T[] = []
+  for (let n = 1; byNumber.has(n); n++) out.push(byNumber.get(n)!)
+  return out
+}
+
+/** Testing-period promo: Credits for a social media post about the platform. */
+export const SOCIAL_CLAIM = {
+  credits: 20,
+  maxPerUser: 3,
+  /** End of 20 Oct 2026, Berlin time (CEST, UTC+2). */
+  until: Date.UTC(2026, 9, 20, 22, 0, 0),
+}
+
+const SOCIAL_HOSTS = [
+  'x.com', 'twitter.com', 'bsky.app', 'threads.net', 'threads.com', 'instagram.com', 'facebook.com', 'fb.com',
+  'linkedin.com', 'reddit.com', 'tiktok.com', 'youtube.com', 'youtu.be', 'mastodon.social', 'mastodon.gamedev.place',
+  'tumblr.com', 'itch.io', 'newgrounds.com', 'discord.com',
+]
+
+/** A link to a post on a known social network (or any Mastodon-style instance). Returns the normalized URL or null. */
+export function normalizeSocialUrl(raw: string): string | null {
+  let u: URL
+  try {
+    u = new URL(raw.trim())
+  } catch {
+    return null
+  }
+  if (u.protocol !== 'https:') return null
+  const host = u.hostname.toLowerCase().replace(/^(www|m|mobile|old)\./, '')
+  const known = SOCIAL_HOSTS.some((h) => host === h || host.endsWith(`.${h}`)) || /mastodon|social|\.masto\./.test(host)
+  if (!known || u.pathname.length < 3) return null
+  u.hash = ''
+  for (const k of [...u.searchParams.keys()]) if (/^(utm_|ref|s$|t$|si$|igsh)/.test(k)) u.searchParams.delete(k)
+  return `https://${host}${u.pathname.replace(/\/$/, '')}${u.search}`
 }

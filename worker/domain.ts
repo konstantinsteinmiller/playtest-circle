@@ -1,5 +1,5 @@
 import type { CampaignQuestion } from '../shared/questions'
-import { RECORDING_TTL_MS, STORAGE_BUDGET_BYTES, pickEvictions, playtimePreset, type PayoutReason, type PlaytimePresetId, type DeviceTarget } from '../shared/rules'
+import { contiguousParts, RECORDING_TTL_MS, STORAGE_BUDGET_BYTES, pickEvictions, playtimePreset, type PayoutReason, type PlaytimePresetId, type DeviceTarget } from '../shared/rules'
 import type {
   CampaignCard,
   CampaignDetail,
@@ -14,6 +14,7 @@ import type { Env } from './env'
 import { newId, now, parseJson } from './lib'
 import { notify } from './notify'
 import type { StorageDriver } from './storage'
+import type { UploadedPart } from './storage/types'
 
 export const mediaUrl = (key: string | null) => (key ? `/api/media/${key}` : null)
 
@@ -231,6 +232,36 @@ export function mapPlaytestRow(p: PlaytestDbRow, tester: PublicUser, totalQuesti
 }
 
 export const recordingExpiry = (submittedAt: number) => submittedAt + RECORDING_TTL_MS
+
+/**
+ * Turns whatever parts reached storage into a playable (possibly partial) video.
+ * Storage's own part list wins; the client's list only fills in if listing fails.
+ * Returns the stored size, or 0 when nothing usable arrived (the upload is then aborted).
+ */
+export async function salvageUpload(st: StorageDriver, key: string, uploadId: string, clientParts: UploadedPart[] = []): Promise<number> {
+  let stored: UploadedPart[] = []
+  try {
+    stored = await st.listParts(key, uploadId)
+  } catch (e) {
+    console.error('[salvage] list parts failed', key, e)
+  }
+  const merged = new Map<number, UploadedPart>()
+  for (const p of clientParts) if (p && Number.isInteger(p.partNumber) && typeof p.etag === 'string') merged.set(p.partNumber, p)
+  for (const p of stored) merged.set(p.partNumber, p)
+  const parts = contiguousParts([...merged.values()])
+  if (!parts.length) {
+    await st.abortMultipart(key, uploadId).catch(() => {})
+    return 0
+  }
+  try {
+    await st.completeMultipart(key, uploadId, parts)
+    return (await st.size(key)) ?? 0
+  } catch (e) {
+    console.error('[salvage] complete failed', key, parts.length, e)
+    await st.abortMultipart(key, uploadId).catch(() => {})
+    return 0
+  }
+}
 
 export type DeleteReason = 'owner' | 'expired' | 'evicted' | 'account_deleted' | 'abandoned'
 

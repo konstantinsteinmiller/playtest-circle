@@ -64,6 +64,8 @@ export class TabRecorder {
   private stoppedAt = 0
   private stopping?: Promise<UploadedPart[]>
   private uploadFailed: unknown = null
+  /** Last part-upload error, kept so a failed upload can be explained to support. */
+  lastUploadError = ''
 
   constructor(private opts: RecorderOptions) {}
 
@@ -171,6 +173,7 @@ export class TabRecorder {
         this.opts.onProgress?.({ parts: this.parts.length, uploading: false, retrying: false })
         return
       } catch (e) {
+        this.lastUploadError = `part ${partNumber}, try ${attempt + 1}: ${e instanceof Error ? e.message : String(e)}`.slice(0, 300)
         if (attempt >= 6) {
           this.uploadFailed = e
           return

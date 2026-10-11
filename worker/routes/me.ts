@@ -4,7 +4,8 @@ import { endSession, requireUser } from '../auth/session'
 import { deleteRecording, type PlaytestDbRow } from '../domain'
 import type { AppEnv } from '../env'
 import { tr } from '../i18n'
-import { fail, now, parseJson } from '../lib'
+import { fail, newId, now, parseJson } from '../lib'
+import { normalizeSocialUrl, SOCIAL_CLAIM } from '../../shared/rules'
 import { storage } from '../storage'
 
 export const meRoutes = new Hono<AppEnv>()
@@ -85,6 +86,51 @@ meRoutes.get('/me/ledger', async (c) => {
     createdAt: r.created_at,
   }))
   return c.json({ rows })
+})
+
+meRoutes.get('/me/social-claims', async (c) => {
+  const u = requireUser(c)
+  const { results } = await c.env.DB.prepare('SELECT id, url, credits, created_at FROM social_claims WHERE user_id = ? ORDER BY created_at')
+    .bind(u.id)
+    .all<{ id: string; url: string; credits: number; created_at: number }>()
+  return c.json({
+    claims: results.map((r) => ({ id: r.id, url: r.url, credits: r.credits, createdAt: r.created_at })),
+    ...SOCIAL_CLAIM,
+    open: now() < SOCIAL_CLAIM.until,
+  })
+})
+
+meRoutes.post('/me/social-claims', async (c) => {
+  const u = requireUser(c)
+  const t = now()
+  if (t >= SOCIAL_CLAIM.until) fail(409, 'social_ended')
+  const { url } = (await c.req.json()) as { url?: unknown }
+  const clean = typeof url === 'string' ? normalizeSocialUrl(url) : null
+  if (!clean) fail(422, 'invalid_social_url')
+  const id = newId()
+  const n = SOCIAL_CLAIM.credits
+  let inserted = 0
+  try {
+    // Insert, credit and ledger only take effect when the claim row went in (limit checked in the same statement).
+    const [ins] = await c.env.DB.batch([
+      c.env.DB.prepare(
+        `INSERT INTO social_claims (id, user_id, url, credits, created_at)
+         SELECT ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM social_claims WHERE user_id = ?) < ?`,
+      ).bind(id, u.id, clean, n, t, u.id, SOCIAL_CLAIM.maxPerUser),
+      c.env.DB.prepare('UPDATE users SET credits = credits + ? WHERE id = ? AND EXISTS (SELECT 1 FROM social_claims WHERE id = ?)').bind(n, u.id, id),
+      c.env.DB.prepare(
+        `INSERT INTO credit_ledger (id, user_id, delta, reason, ref_type, ref_id, created_at)
+         SELECT ?, ?, ?, 'social_post', 'social_claim', ?, ? WHERE EXISTS (SELECT 1 FROM social_claims WHERE id = ?)`,
+      ).bind(newId(), u.id, n, id, t, id),
+    ])
+    inserted = ins.meta.changes
+  } catch (e) {
+    if (String(e).includes('UNIQUE')) fail(409, 'social_url_used')
+    throw e
+  }
+  if (!inserted) fail(409, 'social_max_reached')
+  console.log('[social-claim]', u.id, clean)
+  return c.json({ ok: true, credits: n })
 })
 
 meRoutes.get('/me/notifications', async (c) => {

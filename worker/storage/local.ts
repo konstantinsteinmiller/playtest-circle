@@ -42,6 +42,17 @@ export class LocalDriver implements StorageDriver {
     await mpu.complete(parts.sort((a, b) => a.partNumber - b.partNumber))
   }
 
+  async listParts(key: string, uploadId: string) {
+    // R2 bindings can't list parts, so the local part route leaves a marker per part.
+    const listed = await this.env.LOCAL_BUCKET.list({ prefix: localPartPrefix(uploadId) })
+    return Promise.all(
+      listed.objects.map(async (o) => ({
+        partNumber: Number(o.key.split('/').pop()),
+        etag: (await (await this.env.LOCAL_BUCKET.get(o.key))!.text()) || '',
+      })),
+    )
+  }
+
   async abortMultipart(key: string, uploadId: string) {
     try {
       await this.env.LOCAL_BUCKET.resumeMultipartUpload(key, uploadId).abort()
@@ -65,6 +76,8 @@ export class LocalDriver implements StorageDriver {
 }
 
 /** Serves an R2 object with single-range support so <video> can seek. */
+export const localPartPrefix = (uploadId: string) => `_parts/${uploadId}/`
+
 export async function r2Response(bucket: R2Bucket, key: string, rangeHeader: string | null): Promise<Response> {
   const head = await bucket.head(key)
   if (!head) return new Response('not found', { status: 404 })

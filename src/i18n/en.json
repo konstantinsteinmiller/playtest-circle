@@ -262,7 +262,8 @@
     "reservedUntil": "Your slot is reserved until {time}.",
     "micLevel": "Microphone level",
     "shareEnded": "Sharing ended — you can now give your feedback.",
-    "leaveWarning": "Your playtest is still recording. Leave anyway?"
+    "leaveWarning": "Your playtest is still recording. Leave anyway?",
+    "resultInterrupted": "The recording was interrupted. The dev can still watch what arrived, but no Credits were paid."
   },
   "question": {
     "comment": "Comment",
@@ -583,7 +584,8 @@
       "no_recording": "No recording",
       "implausible_recording": "Recording incomplete",
       "in_progress": "In progress",
-      "expired": "Abandoned"
+      "expired": "Abandoned",
+      "interrupted": "Interrupted (partial video)"
     },
     "expiresIn": "Deleted {when}",
     "deleted": "Deleted",
@@ -635,11 +637,22 @@
       "escrow_refund": "Escrow refund",
       "playtest_reward": "Playtest reward",
       "tidy_bonus": "Tidy bonus",
-      "admin_grant": "Granted by admin"
+      "admin_grant": "Granted by admin",
+      "social_post": "Social media post"
     },
     "myTests": "My playtests",
     "noTests": "You haven't tested any games yet.",
-    "roadmapNote": "Buying Credits and PayPal payouts for big earners are on the roadmap."
+    "roadmapNote": "Buying Credits and PayPal payouts for big earners are on the roadmap.",
+    "social": {
+      "title": "Share the word, get {n} Credits",
+      "body": "Testing period until {date}: post about Playtest Circle on any social network and paste the link to your post. Each post earns {n} Credits, up to {max} times.",
+      "label": "Link to your post",
+      "placeholder": "https://bsky.app/profile/you/post/…",
+      "submit": "Claim {n} Credits",
+      "used": "{used} of {max} claimed",
+      "done": "Thanks for spreading the word! +{n} Credits.",
+      "maxed": "You've claimed all {max} posts. Thank you!"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -772,7 +785,11 @@
     "game_has_live_campaigns": "Cancel this game's live campaigns first.",
     "too_large": "That file is too large.",
     "unsupported_type": "That file type isn't supported.",
-    "banned": "Your account has been suspended."
+    "banned": "Your account has been suspended.",
+    "invalid_social_url": "That doesn't look like a link to a social media post. Paste the full https:// link to your post.",
+    "social_url_used": "This post was already claimed.",
+    "social_max_reached": "You've already claimed the maximum number of posts.",
+    "social_ended": "The testing-period promotion has ended."
   },
   "time": {
     "inHours": "in {n} hours | in {n} hour | in {n} hours",

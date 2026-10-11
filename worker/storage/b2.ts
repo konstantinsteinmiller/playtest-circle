@@ -61,6 +61,24 @@ export class B2Driver implements StorageDriver {
     if (!res.ok) throw new Error(`b2_complete_failed:${res.status}:${await res.text()}`)
   }
 
+  async listParts(key: string, uploadId: string) {
+    const parts: UploadedPart[] = []
+    let marker = '0'
+    for (let page = 0; page < 20; page++) {
+      const res = await this.aws.fetch(this.url(key, { uploadId, 'max-parts': '1000', 'part-number-marker': marker }))
+      if (!res.ok) throw new Error(`list_parts_${res.status}`)
+      const xml = await res.text()
+      for (const m of xml.matchAll(/<Part>([\s\S]*?)<\/Part>/g)) {
+        const n = /<PartNumber>(\d+)<\/PartNumber>/.exec(m[1])?.[1]
+        const etag = /<ETag>([^<]+)<\/ETag>/.exec(m[1])?.[1]?.replace(/&quot;/g, '"')
+        if (n && etag) parts.push({ partNumber: Number(n), etag })
+      }
+      if (!/<IsTruncated>true<\/IsTruncated>/.test(xml)) break
+      marker = /<NextPartNumberMarker>(\d+)</.exec(xml)?.[1] ?? marker
+    }
+    return parts
+  }
+
   async abortMultipart(key: string, uploadId: string) {
     await this.aws.fetch(this.url(key, { uploadId }), { method: 'DELETE' })
   }

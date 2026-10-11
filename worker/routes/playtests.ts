@@ -18,6 +18,7 @@ import {
   mapCampaignDetail,
   mapPlaytestRow,
   recordingExpiry,
+  salvageUpload,
   releaseSlot,
   targetMinutes,
   type PlaytestDbRow,
@@ -163,7 +164,7 @@ playtestRoutes.post('/:id/submit', async (c) => {
   const { u, p, campaign, isTester, st } = await load(c)
   if (!isTester) fail(403, 'not_tester')
   if (p.status !== 'recording') fail(409, 'not_recording')
-  const b = (await c.req.json()) as { answers: AnswerInput[]; parts: UploadedPart[]; recorderMs: number }
+  const b = (await c.req.json()) as { answers: AnswerInput[]; parts: UploadedPart[]; recorderMs: number; uploadError?: unknown }
   const questions = parseJson<CampaignQuestion[]>(campaign.questions, [])
   const qIds = new Set(questions.map((q) => q.id))
 
@@ -183,15 +184,12 @@ playtestRoutes.post('/:id/submit', async (c) => {
 
   let uploadComplete = false
   let bytes = 0
-  if (p.recording_key && p.upload_id && Array.isArray(b.parts) && b.parts.length) {
-    try {
-      await st.completeMultipart(p.recording_key, p.upload_id, b.parts)
-      bytes = (await st.size(p.recording_key)) ?? 0
-      uploadComplete = bytes > 0
-    } catch (e) {
-      console.error('[submit] complete failed', e)
-    }
+  if (p.recording_key && p.upload_id) {
+    bytes = await salvageUpload(st, p.recording_key, p.upload_id, Array.isArray(b.parts) ? b.parts : [])
+    uploadComplete = bytes > 0
   }
+  const uploadNote = typeof b.uploadError === 'string' && b.uploadError ? b.uploadError.slice(0, 300) : null
+  if (!uploadComplete) console.error('[submit] no recording', p.id, uploadNote, Array.isArray(b.parts) ? b.parts.length : 'none')
 
   const t = now()
   const stoppedAt = p.stopped_at ?? t
@@ -226,7 +224,7 @@ playtestRoutes.post('/:id/submit', async (c) => {
     c.env.DB.prepare(
       `UPDATE playtests SET status = ?, stopped_at = ?, active_ms = ?, recorder_ms = ?, recording_bytes = ?,
          recording_expires_at = ?, recording_key = ?, upload_id = NULL, quit_early = ?, answered = ?, required = ?,
-         credits_awarded = ?, payout_reason = ?, submitted_at = ? WHERE id = ? AND status = 'recording'`,
+         credits_awarded = ?, payout_reason = ?, submitted_at = ?, upload_note = ? WHERE id = ? AND status = 'recording'`,
     ).bind(
       paid ? 'paid' : 'no_payout',
       stoppedAt,
@@ -241,6 +239,7 @@ playtestRoutes.post('/:id/submit', async (c) => {
       paid ? campaign.price : 0,
       reason,
       t,
+      uploadNote,
       p.id,
     ),
   ]
@@ -255,7 +254,6 @@ playtestRoutes.post('/:id/submit', async (c) => {
     )
   }
   await c.env.DB.batch(stmts)
-  if (!uploadComplete && p.recording_key && p.upload_id) await st.abortMultipart(p.recording_key, p.upload_id).catch(() => {})
   if (!paid) await releaseSlot(c.env, campaign.id)
 
   const game = campaign.g_title
