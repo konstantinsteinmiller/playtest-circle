@@ -6,7 +6,7 @@ test('social posts earn Credits up to three times', async ({ page }) => {
   await page.goto('/wallet')
   const box = page.getByTestId('social-claim')
   await expect(box).toBeVisible()
-  await expect(page.getByTestId('social-template')).toHaveValue(/quid pro quo[\s\S]*https:\/\/app\.playtest-circle\.workers\.dev\//)
+  await expect(page.getByTestId('social-template')).toHaveValue(/quid pro quo[\s\S]*https:\/\/app\.playtest-circle\.workers\.dev\//i)
   await page.getByTestId('social-url').fill('https://example.com/not-social')
   await page.getByTestId('social-submit').click()
   await expect(box.getByRole('alert')).toContainText("doesn't look like")
