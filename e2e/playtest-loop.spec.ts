@@ -23,6 +23,7 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
 
   await expect(dev).toHaveURL(/\/studio\/campaigns\/new/)
   await dev.getByTestId('build-label').fill('v0.1 first boss')
+  await dev.getByTestId('devices-desktop_mobile').click()
   await dev.getByTestId('next').click()
   await dev.getByTestId('q-controls_feel').check()
   await dev.getByTestId('q-stuck_where').check()
@@ -47,6 +48,7 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
   await tester.getByTestId('start-playtest').click()
   await expect(tester).toHaveURL(/\/play\//)
 
+  await expect(tester.getByTestId('device-instructions')).toContainText('Desktop + mobile')
   await tester.getByTestId('consent').check()
   const [gameTab] = await Promise.all([testerCtx.waitForEvent('page'), tester.getByTestId('open-game').click()])
   await gameTab.waitForLoadState()

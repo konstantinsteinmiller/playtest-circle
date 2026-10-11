@@ -13,6 +13,8 @@ import {
   escrowFor,
   type PlaytimePresetId,
   priceAdvice,
+  DEVICE_TARGETS,
+  type DeviceTarget,
 } from '@shared/rules'
 import type { CampaignInput, Game } from '@shared/types'
 import StepNav from '@/components/StepNav.vue'
@@ -41,6 +43,7 @@ const form = reactive({
   catalogIds: [] as string[],
   custom: [] as { text: string; type: AnswerType; allowNa: boolean }[],
   playtimePreset: 'quick' as PlaytimePresetId,
+  devices: 'desktop' as DeviceTarget,
   slots: 3,
   price: 10,
   minReputation: 0,
@@ -109,6 +112,7 @@ async function publish() {
     buildUrl: form.buildUrl.trim() || null,
     instructions: form.instructions,
     playtimePreset: form.playtimePreset,
+    devices: form.devices,
     slots: form.slots,
     price: form.price,
     minReputation: form.minReputation,
@@ -173,6 +177,25 @@ async function publish() {
           <textarea v-model="form.instructions" class="input min-h-28" maxlength="2000" />
           <span class="field-hint">{{ $t('wizard.instructionsHint') }}</span>
         </label>
+        <div class="space-y-2">
+          <span class="field-label">{{ $t('devices.label') }}</span>
+          <div class="grid gap-2 sm:grid-cols-2" role="radiogroup" :aria-label="$t('devices.label')">
+            <button
+              v-for="d in DEVICE_TARGETS"
+              :key="d"
+              type="button"
+              role="radio"
+              :aria-checked="form.devices === d"
+              class="rounded-xl border-2 p-3 text-left"
+              :class="form.devices === d ? 'border-primary bg-primary text-on-primary' : 'border-line hover:border-ink'"
+              :data-testid="`devices-${d}`"
+              @click="form.devices = d"
+            >
+              <span class="block font-display text-lg font-bold">{{ $t(`devices.${d}`) }}</span>
+              <span class="block text-sm">{{ $t(`devices.hint.${d}`) }}</span>
+            </button>
+          </div>
+        </div>
       </template>
 
       <!-- 2 Questions -->

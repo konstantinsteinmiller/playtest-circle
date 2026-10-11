@@ -1,5 +1,5 @@
 import type { CampaignQuestion } from '../shared/questions'
-import { RECORDING_TTL_MS, STORAGE_BUDGET_BYTES, pickEvictions, playtimePreset, type PayoutReason, type PlaytimePresetId } from '../shared/rules'
+import { RECORDING_TTL_MS, STORAGE_BUDGET_BYTES, pickEvictions, playtimePreset, type PayoutReason, type PlaytimePresetId, type DeviceTarget } from '../shared/rules'
 import type {
   CampaignCard,
   CampaignDetail,
@@ -62,7 +62,7 @@ export function mapGame(r: GameRow): Game {
 
 /** Columns for a campaign joined with its game and owner. Use with CAMPAIGN_FROM. */
 export const CAMPAIGN_SELECT = `
-  c.id, c.status, c.build_label, c.build_url, c.instructions, c.price, c.playtime_preset, c.min_minutes,
+  c.id, c.status, c.build_label, c.build_url, c.instructions, c.price, c.playtime_preset, c.devices, c.min_minutes,
   c.slots_total, c.slots_paid, c.escrow, c.min_reputation, c.questions, c.published_at, c.owner_id, c.hidden_at,
   (SELECT COUNT(*) FROM playtests p WHERE p.campaign_id = c.id AND p.status IN ${PENDING_STATUSES}) AS pending,
   g.id AS g_id, g.owner_id AS g_owner_id, g.title AS g_title, g.pitch AS g_pitch, g.description AS g_description,
@@ -81,6 +81,7 @@ export interface CampaignRow {
   instructions: string
   price: number
   playtime_preset: PlaytimePresetId
+  devices: DeviceTarget
   min_minutes: number
   slots_total: number
   slots_paid: number
@@ -140,6 +141,7 @@ export function mapCampaignCard(r: CampaignRow): CampaignCard {
     buildLabel: r.build_label,
     price: r.price,
     playtimePreset: r.playtime_preset,
+    devices: r.devices === 'desktop_mobile' ? 'desktop_mobile' : 'desktop',
     minMinutes: r.min_minutes,
     slotsTotal: r.slots_total,
     slotsLeft: slotsLeft(r),

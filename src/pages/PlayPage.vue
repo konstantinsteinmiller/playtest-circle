@@ -271,6 +271,10 @@ onBeforeUnmount(() => void recorder?.stop())
           <h2 class="h2">{{ $t('play.briefingTitle') }}</h2>
           <p class="whitespace-pre-line">{{ campaign.instructions || $t('campaign.noInstructions') }}</p>
           <p class="font-semibold text-info-ink">{{ $t('campaign.minPlaytime', { n: campaign.minMinutes }) }}</p>
+          <div class="rounded-xl border-2 border-info-ink p-3" data-testid="device-instructions">
+            <p class="font-semibold text-info-ink">{{ $t(`devices.${campaign.devices}`) }}</p>
+            <p class="text-sm">{{ $t(`devices.howTo.${campaign.devices}`) }}</p>
+          </div>
           <div>
             <h3 class="font-semibold">{{ $t('play.questionsReminder') }}</h3>
             <ul class="mt-2 list-disc space-y-1 pl-5 text-muted">

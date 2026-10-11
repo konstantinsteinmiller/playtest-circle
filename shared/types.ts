@@ -1,5 +1,5 @@
 import type { CampaignQuestion } from './questions'
-import type { PayoutReason, PlaytimePresetId } from './rules'
+import type { DeviceTarget, PayoutReason, PlaytimePresetId } from './rules'
 
 export type Role = 'user' | 'admin'
 export type CampaignStatus = 'draft' | 'live' | 'paused' | 'completed' | 'cancelled'
@@ -66,6 +66,7 @@ export interface CampaignInput {
   buildUrl: string | null
   instructions: string
   playtimePreset: PlaytimePresetId
+  devices: DeviceTarget
   slots: number
   price: number
   minReputation: number
@@ -79,6 +80,7 @@ export interface CampaignCard {
   buildLabel: string
   price: number
   playtimePreset: PlaytimePresetId
+  devices: DeviceTarget
   minMinutes: number
   slotsTotal: number
   slotsLeft: number

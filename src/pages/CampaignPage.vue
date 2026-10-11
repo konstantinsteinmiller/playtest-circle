@@ -138,6 +138,8 @@ async function start() {
           </div>
           <div class="col-span-2">
             <dd class="font-semibold text-info-ink">{{ $t('campaign.minPlaytime', { n: c.minMinutes }) }}</dd>
+            <dd class="font-semibold">{{ $t(`devices.${c.devices}`) }}</dd>
+            <dd class="text-sm text-muted">{{ $t(`devices.howTo.${c.devices}`) }}</dd>
             <dd class="text-sm text-muted">{{ $t('campaign.slots', { left: c.slotsLeft, total: c.slotsTotal }) }}</dd>
             <dd v-if="c.minReputation" class="text-sm text-muted">{{ $t('campaign.minRep', { n: c.minReputation }) }}</dd>
           </div>

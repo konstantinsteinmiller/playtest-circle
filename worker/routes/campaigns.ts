@@ -123,9 +123,9 @@ campaignRoutes.post('/', async (c) => {
   try {
     await c.env.DB.batch([
       c.env.DB.prepare(
-        `INSERT INTO campaigns (id, game_id, owner_id, build_label, build_url, instructions, playtime_preset, min_minutes,
+        `INSERT INTO campaigns (id, game_id, owner_id, build_label, build_url, instructions, playtime_preset, devices, min_minutes,
           slots_total, price, escrow, min_reputation, questions, status, published_at, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'live',?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'live',?,?,?)`,
       ).bind(
         id,
         b.gameId,
@@ -134,6 +134,7 @@ campaignRoutes.post('/', async (c) => {
         b.buildUrl ? httpUrl(b.buildUrl) : null,
         str(b.instructions ?? '', 2000),
         preset.id,
+        b.devices === 'desktop_mobile' ? 'desktop_mobile' : 'desktop',
         preset.minMinutes,
         slots,
         price,

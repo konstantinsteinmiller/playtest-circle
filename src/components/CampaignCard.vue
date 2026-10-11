@@ -64,6 +64,7 @@ function stopPreview() {
       <p class="line-clamp-2">{{ campaign.game.pitch }}</p>
       <div class="mt-auto flex flex-wrap gap-2">
         <span class="chip border-info-ink text-info-ink">⏱ {{ $t(`presets.playtime.${campaign.playtimePreset}`) }}</span>
+        <span class="chip border-line">{{ $t(`devices.chip.${campaign.devices}`) }}</span>
         <span class="chip">{{ $t('browse.slotsLeft', campaign.slotsLeft) }}</span>
         <span class="chip">{{ $t(`hosts.${campaign.game.host}`) }}</span>
         <span v-for="tag in campaign.game.tags.slice(0, 3)" :key="tag" class="chip text-muted">#{{ tag }}</span>

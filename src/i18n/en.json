@@ -778,5 +778,22 @@
     "inHours": "in {n} hours | in {n} hour | in {n} hours",
     "inMinutes": "in {n} minutes | in {n} minute | in {n} minutes",
     "inDays": "in {n} days | in {n} day | in {n} days"
+  },
+  "devices": {
+    "label": "Devices to test",
+    "desktop": "Desktop only",
+    "desktop_mobile": "Desktop + mobile",
+    "hint": {
+      "desktop": "Testers play in a normal desktop browser tab.",
+      "desktop_mobile": "Testers also check the mobile layout and touch controls."
+    },
+    "howTo": {
+      "desktop": "Play in a normal desktop browser window. No need to check phones or tablets.",
+      "desktop_mobile": "Play part of the session as on a phone: in the game tab press F12, then Ctrl+Shift+M (device toolbar), pick a phone and reload. The recording captures that view. Note anything that breaks on small screens or with touch."
+    },
+    "chip": {
+      "desktop": "🖥 Desktop",
+      "desktop_mobile": "🖥 + 📱 Mobile"
+    }
   }
 }

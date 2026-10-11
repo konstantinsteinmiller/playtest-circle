@@ -46,6 +46,9 @@ export const PRICE_PRESETS = [
 ] as const
 export type PricePresetId = (typeof PRICE_PRESETS)[number]['id']
 
+export const DEVICE_TARGETS = ['desktop', 'desktop_mobile'] as const
+export type DeviceTarget = (typeof DEVICE_TARGETS)[number]
+
 export const PLAYTIME_PRESETS = [
   { id: 'quick', minMinutes: 3, targetMinutes: 5 },
   { id: 'standard', minMinutes: 7, targetMinutes: 10 },
