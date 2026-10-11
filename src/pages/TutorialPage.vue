@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import GoogleIcon from '@/components/GoogleIcon.vue'
 import { onMounted } from 'vue'
 import { WELCOME_GRANT } from '@shared/rules'
 import { api } from '@/lib/api'
@@ -48,6 +49,6 @@ onMounted(async () => {
       <RouterLink to="/browse" class="btn btn-primary">{{ $t('tutorial.browse') }}</RouterLink>
       <RouterLink to="/studio/games/new" class="btn btn-secondary">{{ $t('tutorial.createGame') }}</RouterLink>
     </div>
-    <a v-else :href="session.loginUrl()" class="btn btn-primary">{{ $t('landing.cta') }}</a>
+    <a v-else :href="session.loginUrl()" class="btn btn-primary"><GoogleIcon />{{ $t('landing.cta') }}</a>
   </div>
 </template>

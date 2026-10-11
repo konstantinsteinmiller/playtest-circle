@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import GoogleIcon from '@/components/GoogleIcon.vue'
 import { onClickOutside } from '@vueuse/core'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -90,7 +91,7 @@ const links = [
             </svg>
           </button>
         </template>
-        <a v-else :href="session.loginUrl()" class="btn btn-primary whitespace-nowrap"><span class="sm:hidden">{{ $t('nav.signInShort') }}</span><span class="hidden sm:inline">{{ $t('nav.signIn') }}</span></a>
+        <a v-else :href="session.loginUrl()" class="btn btn-primary whitespace-nowrap"><GoogleIcon /><span class="sm:hidden">{{ $t('nav.signInShort') }}</span><span class="hidden sm:inline">{{ $t('nav.signIn') }}</span></a>
       </div>
     </div>
     <nav v-if="menuOpen && session.signedIn" class="border-t-2 border-line px-4 py-2 lg:hidden" @click="menuOpen = false">
