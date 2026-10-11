@@ -1,0 +1,111 @@
+import { expect, test } from '@playwright/test'
+import { FIXTURE_GAME_URL, serveFixtureGame, signIn } from './helpers'
+
+/**
+ * The whole quid-pro-quo loop with real tab capture:
+ * dev posts a game + campaign → tester records a session and answers → Credits move →
+ * dev reviews the recording, jumps to a note, rates it and deletes it for the tidy bonus.
+ */
+test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ browser }) => {
+  // ---------------------------------------------------------------- dev publishes
+  const devCtx = await browser.newContext()
+  const dev = await devCtx.newPage()
+  await signIn(dev, 'alice@example.com', 'Alice Dev')
+
+  await dev.goto('/studio/games/new')
+  await dev.getByTestId('game-title').fill('Doom Duck')
+  await dev.getByTestId('game-pitch').fill('A duck with a shotgun saves the pond from robot frogs.')
+  await dev.getByTestId('next').click()
+  await dev.getByTestId('game-url').fill(FIXTURE_GAME_URL)
+  await dev.getByTestId('next').click()
+  await dev.getByTestId('next').click()
+  await dev.getByTestId('save-game').click()
+
+  await expect(dev).toHaveURL(/\/studio\/campaigns\/new/)
+  await dev.getByTestId('build-label').fill('v0.1 first boss')
+  await dev.getByTestId('next').click()
+  await dev.getByTestId('q-controls_feel').check()
+  await dev.getByTestId('q-stuck_where').check()
+  await dev.getByTestId('next').click()
+  await dev.getByTestId('next').click() // quick preset (min 3 "minutes" = 3 s in e2e)
+  await dev.getByTestId('slots').fill('1')
+  await dev.getByTestId('price').fill('10')
+  await dev.getByTestId('next').click()
+  await dev.getByTestId('publish').click()
+  await expect(dev).toHaveURL(/\/studio\/campaigns\/\w+\?published=1/)
+  const resultsUrl = dev.url().split('?')[0]
+  expect((await (await dev.request.get('/api/me')).json()).user.credits).toBe(0)
+
+  // ---------------------------------------------------------------- tester plays
+  const testerCtx = await browser.newContext()
+  await serveFixtureGame(testerCtx)
+  const tester = await testerCtx.newPage()
+  await signIn(tester, 'bob@example.com', 'Bob Tester')
+
+  await tester.goto('/browse')
+  await tester.getByRole('link', { name: 'Doom Duck' }).click()
+  await tester.getByTestId('start-playtest').click()
+  await expect(tester).toHaveURL(/\/play\//)
+
+  await tester.getByTestId('consent').check()
+  const [gameTab] = await Promise.all([testerCtx.waitForEvent('page'), tester.getByTestId('open-game').click()])
+  await gameTab.waitForLoadState()
+  await expect(gameTab).toHaveTitle('Fixture Game')
+  await tester.bringToFront()
+
+  await tester.getByTestId('start-recording').click()
+  await expect(tester.getByTestId('elapsed')).toBeVisible()
+
+  await tester.waitForTimeout(1500)
+  await tester.getByTestId('mark-moment').click()
+  await tester.getByTestId('note-text').fill('Boss intro is too long')
+  await tester.getByTestId('save-note').click()
+  await expect(tester.getByText('Boss intro is too long')).toBeVisible()
+
+  await tester.waitForTimeout(3000) // past the 3 s minimum
+  await tester.getByTestId('stop').click()
+
+  // Questionnaire: pick a rating and write a comment everywhere.
+  const fields = tester.locator('fieldset')
+  await expect(fields.first()).toBeVisible()
+  const count = await fields.count()
+  for (let i = 0; i < count; i++) {
+    const f = fields.nth(i)
+    const radios = f.getByRole('radio')
+    if (await radios.count()) await radios.nth(3).click()
+    await f.locator('textarea').fill('Clear feedback: the second room loses momentum.')
+  }
+  await tester.getByTestId('submit-feedback').click()
+  await expect(tester.getByTestId('result')).toContainText('10 Credits were added')
+  expect((await (await tester.request.get('/api/me')).json()).user.credits).toBe(20)
+
+  // ---------------------------------------------------------------- dev reviews
+  await dev.goto(resultsUrl)
+  const row = dev.getByTestId('playtest-row').first()
+  await expect(row).toContainText('Bob Tester')
+  await expect(row).toContainText('Paid')
+  await row.getByRole('link', { name: 'Review' }).click()
+
+  const video = dev.getByTestId('recording')
+  await expect(video).toBeVisible()
+  await expect
+    .poll(async () => video.evaluate((v: HTMLVideoElement) => v.readyState), { timeout: 15_000 })
+    .toBeGreaterThanOrEqual(1)
+  // Jump-to-note must land near the marked offset (the seekability spike).
+  await dev.getByTestId('note-jump').first().click()
+  await expect
+    .poll(async () => video.evaluate((v: HTMLVideoElement) => v.currentTime), { timeout: 10_000 })
+    .toBeGreaterThan(0.8)
+
+  await dev.getByRole('button', { name: /Helpful/ }).first().click()
+  dev.once('dialog', (d) => d.accept())
+  await dev.getByTestId('delete-recording').click()
+  await expect(dev.getByText('Thanks for tidying up')).toBeVisible()
+  expect((await (await dev.request.get('/api/me')).json()).user.credits).toBe(1)
+
+  const profile = await (await dev.request.get(`/api/users/${(await (await tester.request.get('/api/me')).json()).user.id}`)).json()
+  expect(profile.user.repUp).toBe(1)
+
+  await devCtx.close()
+  await testerCtx.close()
+})

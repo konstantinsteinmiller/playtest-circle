@@ -1,0 +1,12 @@
+# Copy to .dev.vars for local development (never commit .dev.vars)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+SESSION_SECRET=change-me-to-a-long-random-string
+DEV_LOGIN=1
+STORAGE_DRIVER=local
+# Production B2 (S3-compatible) keys
+B2_KEY_ID=
+B2_APP_KEY=
+# Optional email via Resend (needs a verified domain)
+RESEND_API_KEY=
+MAIL_FROM=

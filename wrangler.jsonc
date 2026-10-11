@@ -1,0 +1,76 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "playtest-circle",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  // Top level = production. Secrets (GOOGLE_*, SESSION_SECRET, B2_KEY_ID, B2_APP_KEY, SMTP_*) via `wrangler secret put`.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "playtest-circle",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": { "crons": ["17 * * * *"] },
+  "vars": {
+    "APP_URL": "https://playtest-circle.workers.dev",
+    "STORAGE_DRIVER": "b2",
+    "MAIL_DRIVER": "gmail",
+    "MAIL_FROM_NAME": "Play Testing Circle",
+    "DEV_LOGIN": "0",
+    "ADMIN_EMAILS": "hyperg8.studio@gmail.com",
+    "GITHUB_URL": "https://github.com/konstantinsteinmiller/playtest-circle",
+    "B2_ENDPOINT": "",
+    "B2_BUCKET": "playtest-circle",
+    "B2_REGION": ""
+  },
+  "observability": { "enabled": true },
+  "env": {
+    // `pnpm dev`: everything local — D1 + a local R2 bucket instead of B2, dev login on, no mail.
+    "dev": {
+      "d1_databases": [
+        { "binding": "DB", "database_name": "playtest-circle", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+      ],
+      "r2_buckets": [{ "binding": "LOCAL_BUCKET", "bucket_name": "playtest-circle-local" }],
+      "vars": {
+        "APP_URL": "http://localhost:5173",
+        "STORAGE_DRIVER": "local",
+        "MAIL_DRIVER": "none",
+        "MAIL_FROM_NAME": "Play Testing Circle",
+        "DEV_LOGIN": "1",
+        "ADMIN_EMAILS": "hyperg8.studio@gmail.com,admin@example.com",
+        "GITHUB_URL": "https://github.com/konstantinsteinmiller/playtest-circle",
+        "B2_ENDPOINT": "",
+        "B2_BUCKET": "",
+        "B2_REGION": ""
+      }
+    },
+    // Playwright: like dev, but a "minute" lasts one second so playtime rules run in real time.
+    "e2e": {
+      "d1_databases": [
+        { "binding": "DB", "database_name": "playtest-circle", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+      ],
+      "r2_buckets": [{ "binding": "LOCAL_BUCKET", "bucket_name": "playtest-circle-local" }],
+      "vars": {
+        "APP_URL": "http://localhost:5199",
+        "STORAGE_DRIVER": "local",
+        "MAIL_DRIVER": "none",
+        "MAIL_FROM_NAME": "Play Testing Circle",
+        "DEV_LOGIN": "1",
+        "TEST_MINUTE_MS": "1000",
+        "SESSION_SECRET": "e2e-only-secret-0123456789abcdef",
+        "ADMIN_EMAILS": "admin@example.com",
+        "GITHUB_URL": "https://github.com/konstantinsteinmiller/playtest-circle",
+        "B2_ENDPOINT": "",
+        "B2_BUCKET": "",
+        "B2_REGION": ""
+      }
+    }
+  }
+}
