@@ -8,6 +8,7 @@ import type { PayoutReason } from '@shared/rules'
 import type { Note, PlaytestDetail } from '@shared/types'
 import QuestionField from '@/components/QuestionField.vue'
 import { useErrorText } from '@/composables/useErrorText'
+import { useDraft } from '@/composables/useDraft'
 import { useQuestionText } from '@/composables/useQuestionText'
 import { api } from '@/lib/api'
 import { formatDuration } from '@/lib/format'
@@ -73,6 +74,18 @@ const missing = computed(() => counts.value.required - counts.value.requiredAnsw
 const isRequired = (q: CampaignQuestion) => q.required || (q.id === 'sys_quit_reason' && quitEarly.value)
 const shownQuestions = computed(() => questions.value.filter((q) => q.id !== 'sys_quit_reason' || quitEarly.value))
 
+const draft = useDraft<{ answers: Record<string, AnswerInput>; noteText: string; parts: UploadedPart[]; recorderMs: number }>(
+  `playtest:${id}`,
+  () => ({ answers: answers.value, noteText: noteText.value, parts: parts.value, recorderMs: recorderMs.value }),
+  (d) => {
+    // Only answers for questions that still exist; new ones keep their empty default.
+    for (const [qid, a] of Object.entries(d.answers)) if (answers.value[qid]) answers.value[qid] = a
+    noteText.value = d.noteText
+    parts.value = d.parts
+    recorderMs.value = d.recorderMs
+  },
+)
+
 onMounted(async () => {
   try {
     const r = await api<{ playtest: PlaytestDetail; minuteMs: number }>(`/playtests/${id}`)
@@ -81,7 +94,13 @@ onMounted(async () => {
     notes.value = r.playtest.notes
     for (const q of r.playtest.campaign.questions) answers.value[q.id] = { questionId: q.id, value: null, na: false, text: '' }
     const s = r.playtest.status
-    if (s === 'paid' || s === 'no_payout') {
+    const resumable = s === 'recording' && draft.restore() && parts.value.length > 0
+    if (resumable) {
+      // The recording was already stopped and uploaded before the reload: continue with the questionnaire.
+      elapsed.value = recorderMs.value
+      phase.value = 'questionnaire'
+    } else if (s === 'paid' || s === 'no_payout') {
+      draft.discard()
       result.value = { reason: r.playtest.payoutReason ?? 'paid', credits: r.playtest.creditsAwarded }
       phase.value = 'result'
     } else if (s === 'expired' || (r.playtest.reservedUntil ?? 0) < Date.now()) {
@@ -135,6 +154,7 @@ async function startRecording() {
   if (recorder.micFailed) notice.value = t('play.micDenied')
   hasMic.value = recorder.hasMic
   notes.value = []
+  parts.value = []
   phase.value = 'recording'
 }
 
@@ -184,6 +204,7 @@ async function submit() {
       json: { answers: answerList.value, parts: parts.value, recorderMs: recorderMs.value },
     })
     result.value = r
+    draft.discard()
     phase.value = 'result'
     void session.refresh()
   } catch (e) {
@@ -196,6 +217,7 @@ async function abandon() {
   if (!window.confirm(t('play.abandonConfirm'))) return
   await recorder?.stop()
   await api(`/playtests/${id}/abandon`, { method: 'POST' }).catch(() => {})
+  draft.discard()
   router.push('/browse')
 }
 

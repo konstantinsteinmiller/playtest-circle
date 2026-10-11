@@ -68,6 +68,12 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
   // Questionnaire: pick a rating and write a comment everywhere.
   const fields = tester.locator('fieldset')
   await expect(fields.first()).toBeVisible()
+  // An accidental reload mid-questionnaire keeps the answers and the uploaded recording.
+  await fields.first().locator('textarea').fill('Typed before the reload')
+  await tester.waitForTimeout(500)
+  tester.once('dialog', (d) => d.accept())
+  await tester.reload()
+  await expect(fields.first().locator('textarea')).toHaveValue('Typed before the reload')
   const count = await fields.count()
   for (let i = 0; i < count; i++) {
     const f = fields.nth(i)

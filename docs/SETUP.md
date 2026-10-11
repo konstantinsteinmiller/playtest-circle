@@ -52,7 +52,7 @@ The free tier gives 10 GB of storage and free egress up to 3× the stored amount
 5. CORS rules, so the browser can upload directly. Set them with the B2 CLI or the API:
    ```json
    [{
-     "corsRuleName": "app",
+     "corsRuleName": "playtest-app",
      "allowedOrigins": ["https://playtest-circle.<your-subdomain>.workers.dev", "http://localhost:5173"],
      "allowedOperations": ["s3_put", "s3_get", "s3_head"],
      "allowedHeaders": ["*"],
@@ -88,7 +88,7 @@ npx wrangler login
 npx wrangler d1 create playtest-circle          # paste the database_id into wrangler.jsonc (top level + envs)
 pnpm db:migrate:remote
 npx wrangler secret put SESSION_SECRET          # any long random string
-pnpm deploy
+pnpm run deploy
 ```
 
 Then set `APP_URL` in `wrangler.jsonc` to the deployed URL and deploy again. The hourly cron does the following:

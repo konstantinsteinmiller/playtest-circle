@@ -16,6 +16,7 @@ import {
 import type { CampaignInput, Game } from '@shared/types'
 import StepNav from '@/components/StepNav.vue'
 import { useErrorText } from '@/composables/useErrorText'
+import { useDraft } from '@/composables/useDraft'
 import { api } from '@/lib/api'
 import { useSession } from '@/stores/session'
 
@@ -44,10 +45,29 @@ const form = reactive({
   minReputation: 0,
 })
 
+const restored = ref(false)
+const draft = useDraft<{ form: typeof form; step: number }>(
+  'campaign:new',
+  () => ({ form: { ...form, catalogIds: [...form.catalogIds], custom: form.custom.map((c) => ({ ...c })) }, step: step.value }),
+  (d) => {
+    Object.assign(form, d.form)
+    step.value = d.step
+    restored.value = true
+  },
+)
+
+function discardDraft() {
+  draft.discard()
+  window.location.reload()
+}
+
 onMounted(async () => {
   const [g] = await Promise.all([api<{ games: Game[] }>('/games'), session.refresh()])
   games.value = g.games
-  if (!form.gameId && g.games.length) form.gameId = g.games[0].id
+  draft.restore()
+  // A game chosen via ?game= (e.g. right after creating it) beats the draft's choice.
+  if (typeof route.query.game === 'string') form.gameId = route.query.game
+  if (!games.value.some((x) => x.id === form.gameId)) form.gameId = g.games[0]?.id ?? ''
 })
 
 const steps = computed(() => ['build', 'questions', 'playtime', 'pricing', 'review'].map((s) => t(`wizard.steps.${s}`)))
@@ -87,6 +107,7 @@ async function publish() {
   try {
     const r = await api<{ id: string }>('/campaigns', { method: 'POST', json: body })
     await session.refresh()
+    draft.discard()
     router.push(`/studio/campaigns/${r.id}?published=1`)
   } catch (e) {
     error.value = errorText(e, 'wizard.errors')
@@ -104,6 +125,10 @@ async function publish() {
     </header>
     <p v-if="justCreated" class="rounded-xl border-2 border-primary-ink p-3 font-semibold text-primary-ink" role="status">✓ {{ $t('game.created') }}</p>
     <StepNav :steps="steps" :current="step" @go="step = $event" />
+    <p v-if="restored" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-info-ink p-3 font-semibold text-info-ink" role="status">
+      {{ $t('draft.restored') }}
+      <button type="button" class="btn btn-ghost min-h-9 py-1" @click="discardDraft">{{ $t('draft.discard') }}</button>
+    </p>
 
     <div v-if="!games.length" class="card space-y-3 p-6">
       <p>{{ $t('wizard.noGame') }}</p>

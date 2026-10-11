@@ -34,6 +34,10 @@
     "open": "Open",
     "approxTime": "About {n} minutes"
   },
+  "draft": {
+    "restored": "We restored your unsaved draft.",
+    "discard": "Discard draft"
+  },
   "nav": {
     "browse": "Browse playtests",
     "studio": "My studio",
@@ -616,9 +620,9 @@
     },
     "imprint": {
       "s1Title": "Information according to § 5 DDG",
-      "s1Body": "[Name of the operator]\n[Street and number]\n[Postcode and city]\n[Country]",
+      "s1Body": "Konstantin Steinmiller\nWildgrund 4\n33442 Clarholz\nGermany",
       "s2Title": "Contact",
-      "s2Body": "Email: [contact email]"
+      "s2Body": "Email: hyperg8.studio@gmail.com"
     }
   },
   "errors": {

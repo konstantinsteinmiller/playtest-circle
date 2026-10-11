@@ -7,6 +7,7 @@ import type { Game, GameHost, GameInput } from '@shared/types'
 import MediaUpload from '@/components/MediaUpload.vue'
 import StepNav from '@/components/StepNav.vue'
 import { useErrorText } from '@/composables/useErrorText'
+import { useDraft } from '@/composables/useDraft'
 import { api } from '@/lib/api'
 
 const route = useRoute()
@@ -33,9 +34,32 @@ const step = ref(0)
 const saving = ref(false)
 const error = ref('')
 const steps = computed(() => [t('game.steps.basics'), t('game.steps.link'), t('game.steps.media'), t('game.steps.review')])
+const restored = ref(false)
+
+type GameDraft = { form: typeof form; cover: typeof cover.value; clip: typeof clip.value; shots: typeof shots.value; step: number }
+const draft = useDraft<GameDraft>(
+  `game:${editId.value ?? 'new'}`,
+  () => ({ form: { ...form }, cover: cover.value, clip: clip.value, shots: shots.value, step: step.value }),
+  (d) => {
+    Object.assign(form, d.form)
+    cover.value = d.cover
+    clip.value = d.clip
+    shots.value = d.shots
+    step.value = d.step
+    restored.value = true
+  },
+)
+
+function discardDraft() {
+  draft.discard()
+  window.location.reload()
+}
 
 onMounted(async () => {
-  if (!editId.value) return
+  if (!editId.value) {
+    draft.restore()
+    return
+  }
   const r = await api<{ game: Game; keys: { coverKey: string | null; hoverClipKey: string | null; screenshotKeys: string[] } }>(`/games/${editId.value}`)
   const g = r.game
   Object.assign(form, {
@@ -51,6 +75,8 @@ onMounted(async () => {
   cover.value = r.keys.coverKey ? { key: r.keys.coverKey, url: g.coverUrl! } : null
   clip.value = r.keys.hoverClipKey ? { key: r.keys.hoverClipKey, url: g.hoverClipUrl! } : null
   shots.value = r.keys.screenshotKeys.map((k, i) => ({ key: k, url: g.screenshots[i] }))
+  // Unsaved edits win over the stored version.
+  draft.restore()
 })
 
 const tags = computed(() =>
@@ -86,6 +112,7 @@ async function save() {
     const r = editId.value
       ? await api<{ id: string }>(`/games/${editId.value}`, { method: 'PUT', json: body })
       : await api<{ id: string }>('/games', { method: 'POST', json: body })
+    draft.discard()
     router.push(editId.value ? '/studio' : `/studio/campaigns/new?game=${r.id}&created=1`)
   } catch (e) {
     error.value = errorText(e)
@@ -112,6 +139,10 @@ async function archive() {
       <p class="mt-1 text-muted">{{ $t('game.lead') }} · {{ $t('common.approxTime', { n: 5 }) }}</p>
     </header>
     <StepNav :steps="steps" :current="step" @go="step = $event" />
+    <p v-if="restored" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-info-ink p-3 font-semibold text-info-ink" role="status">
+      {{ $t('draft.restored') }}
+      <button type="button" class="btn btn-ghost min-h-9 py-1" @click="discardDraft">{{ $t('draft.discard') }}</button>
+    </p>
 
     <form class="card space-y-5 p-6" @submit.prevent="step < 3 ? stepValid && step++ : save()">
       <template v-if="step === 0">
