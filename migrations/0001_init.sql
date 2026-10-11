@@ -1,4 +1,4 @@
--- Play Testing Circle: initial schema. Timestamps are epoch milliseconds.
+-- Playtest Circle: initial schema. Timestamps are epoch milliseconds.
 
 CREATE TABLE users (
   id TEXT PRIMARY KEY,

@@ -3,7 +3,7 @@ import { buildMime } from '../worker/mail'
 
 describe('buildMime', () => {
   it('encodes UTF-8 subject and bodies and keeps lines short', () => {
-    const mime = buildMime('bot@example.com', 'Play Testing Circle', {
+    const mime = buildMime('bot@example.com', 'Playtest Circle', {
       to: 'dev@example.com',
       subject: 'Neuer Playtest für Dämon-Dash',
       text: 'Hallo ✨',

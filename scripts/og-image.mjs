@@ -20,7 +20,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 <div class="glow1"></div><div class="glow2"></div>
 <div class="wrap"><div class="logo">${logo}</div>
 <div><span class="chip">Quid pro quo playtesting</span>
-<h1>Play Testing<br>Circle</h1>
+<h1>Playtest<br>Circle</h1>
 <p>Game devs test each other's games — recorded sessions, real answers, Credits for every test.</p></div></div>
 <div class="foot"><span>Free &amp; <b>open source</b></span><span>app.playtest-circle.workers.dev</span></div>
 </body></html>`

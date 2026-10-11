@@ -1,6 +1,6 @@
-<p align="center"><img src="public/logo.svg" width="96" alt="Play Testing Circle logo"></p>
+<p align="center"><img src="public/logo.svg" width="96" alt="Playtest Circle logo"></p>
 
-# Play Testing Circle
+# Playtest Circle
 
 *Quid pro quo playtesting.* A gated community where game developers test each other's games. Play a build while your tab is recorded, answer the dev's questions and earn **Credits**. Then spend them to get your own game tested by people who know what to look for: where you get stuck, where it gets boring, which boss is too hard or too easy.
 

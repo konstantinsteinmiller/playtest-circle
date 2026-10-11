@@ -25,7 +25,7 @@ pnpm test:e2e    # Playwright in system Chrome: full playtest loop with real tab
 1. <https://console.cloud.google.com/> → new project **playtest-circle**.
 2. *APIs & Services → OAuth consent screen*:
    - User type **External**.
-   - App name *Play Testing Circle*, support email, logo `public/logo.svg` (exported as PNG).
+   - App name *Playtest Circle*, support email, logo `public/logo.svg` (exported as PNG).
    - Scopes: `openid`, `email`, `profile` only. These are non-sensitive, so no Google verification is needed.
    - **Publish app** → *In production*.
 3. *Credentials → Create credentials → OAuth client ID → Web application*. Authorised redirect URIs:
@@ -72,7 +72,7 @@ The free tier gives 10 GB of storage and free egress up to 3× the stored amount
 Devs get an email for every finished playtest by default, sent to their Google sign-in address. They can turn it off in Settings. Without a custom domain, the free way to send is Gmail SMTP with an **app password** from the operator's Google account. The limit is about 500 mails/day.
 
 1. Turn on 2-Step Verification for the sending Google account.
-2. <https://myaccount.google.com/apppasswords> → create an app password named "Play Testing Circle".
+2. <https://myaccount.google.com/apppasswords> → create an app password named "Playtest Circle".
 3. Store it:
    ```sh
    npx wrangler secret put SMTP_USER     # e.g. hyperg8.studio@gmail.com

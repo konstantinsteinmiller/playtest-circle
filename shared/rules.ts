@@ -152,3 +152,18 @@ export function pickEvictions(
   }
   return out
 }
+
+/** Credits per minute of playtime that we consider a fair trade between devs. */
+export const FAIR_CREDITS_PER_MINUTE = 2
+
+export type PriceTier = 'low' | 'under' | 'fair' | 'fast'
+
+/** How a price compares with the fair rate for the playtime the dev asks for. */
+export function priceAdvice(price: number, preset: PlaytimePresetId) {
+  const p = PLAYTIME_PRESETS.find((x) => x.id === preset) ?? PLAYTIME_PRESETS[0]
+  const minutes = p.targetMinutes ?? p.minMinutes * 2
+  const fair = Math.max(PRICE_MIN, Math.round(minutes * FAIR_CREDITS_PER_MINUTE))
+  const fast = Math.min(PRICE_MAX, Math.ceil(fair * 1.5))
+  const tier: PriceTier = price < fair * 0.6 ? 'low' : price < fair ? 'under' : price < fast ? 'fair' : 'fast'
+  return { fair, fast, tier }
+}

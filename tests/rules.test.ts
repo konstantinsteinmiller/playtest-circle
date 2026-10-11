@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
+import { priceAdvice,
   PRICE_MAX,
   PRICE_MIN,
   RECORDING,
@@ -125,5 +125,14 @@ describe('pickEvictions', () => {
 
   it('defaults to the global budget', () => {
     expect(pickEvictions([c('a', 1, false)], STORAGE_BUDGET_BYTES, 1)).toEqual(['a'])
+  })
+})
+
+describe('priceAdvice', () => {
+  it('scales the fair price with playtime and grades the offer', () => {
+    expect(priceAdvice(10, 'quick')).toEqual({ fair: 10, fast: 15, tier: 'fair' })
+    expect(priceAdvice(5, 'quick').tier).toBe('low')
+    expect(priceAdvice(15, 'standard').tier).toBe('under')
+    expect(priceAdvice(60, 'deep').tier).toBe('fast')
   })
 })

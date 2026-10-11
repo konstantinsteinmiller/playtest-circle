@@ -99,7 +99,7 @@ async function smtpSend(env: Env, mail: Mail) {
     await reply(250)
     await send('DATA')
     await reply(354)
-    const body = buildMime(env.SMTP_USER!, env.MAIL_FROM_NAME ?? 'Play Testing Circle', mail).replace(/^\./gm, '..')
+    const body = buildMime(env.SMTP_USER!, env.MAIL_FROM_NAME ?? 'Playtest Circle', mail).replace(/^\./gm, '..')
     await writer.write(enc.encode(body + '\r\n.\r\n'))
     await reply(250)
     await send('QUIT')

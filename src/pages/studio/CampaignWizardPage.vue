@@ -12,6 +12,7 @@ import {
   SLOTS_MAX,
   escrowFor,
   type PlaytimePresetId,
+  priceAdvice,
 } from '@shared/rules'
 import type { CampaignInput, Game } from '@shared/types'
 import StepNav from '@/components/StepNav.vue'
@@ -46,13 +47,15 @@ const form = reactive({
 })
 
 const restored = ref(false)
-const draft = useDraft<{ form: typeof form; step: number }>(
+const prefilled = ref(false)
+const draft = useDraft<{ form: typeof form; step: number; prefill?: boolean }>(
   'campaign:new',
-  () => ({ form: { ...form, catalogIds: [...form.catalogIds], custom: form.custom.map((c) => ({ ...c })) }, step: step.value }),
+  () => ({ prefill: prefilled.value, form: { ...form, catalogIds: [...form.catalogIds], custom: form.custom.map((c) => ({ ...c })) }, step: step.value }),
   (d) => {
     Object.assign(form, d.form)
     step.value = d.step
-    restored.value = true
+    if (d.prefill) prefilled.value = true
+    else restored.value = true
   },
 )
 
@@ -71,6 +74,14 @@ onMounted(async () => {
 })
 
 const steps = computed(() => ['build', 'questions', 'playtime', 'pricing', 'review'].map((s) => t(`wizard.steps.${s}`)))
+const advice = computed(() => priceAdvice(form.price, form.playtimePreset))
+const ADVICE_STYLE = {
+  low: 'border-danger-ink text-danger-ink',
+  under: 'border-warn-ink text-warn-ink',
+  fair: 'border-primary-ink text-primary-ink',
+  fast: 'border-info-ink text-info-ink',
+} as const
+const ADVICE_ICON = { low: '▼', under: '◐', fair: '✓', fast: '⚡' } as const
 const total = computed(() => escrowFor(form.slots, form.price))
 const balance = computed(() => session.me?.credits ?? 0)
 const affordable = computed(() => total.value <= balance.value)
@@ -107,7 +118,11 @@ async function publish() {
   try {
     const r = await api<{ id: string }>('/campaigns', { method: 'POST', json: body })
     await session.refresh()
-    draft.discard()
+    // The next campaign starts from this one's settings; only the build label is new each time.
+    form.buildLabel = ''
+    step.value = 0
+    prefilled.value = true
+    draft.keep()
     router.push(`/studio/campaigns/${r.id}?published=1`)
   } catch (e) {
     error.value = errorText(e, 'wizard.errors')
@@ -125,9 +140,9 @@ async function publish() {
     </header>
     <p v-if="justCreated" class="rounded-xl border-2 border-primary-ink p-3 font-semibold text-primary-ink" role="status">✓ {{ $t('game.created') }}</p>
     <StepNav :steps="steps" :current="step" @go="step = $event" />
-    <p v-if="restored" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-info-ink p-3 font-semibold text-info-ink" role="status">
-      {{ $t('draft.restored') }}
-      <button type="button" class="btn btn-ghost min-h-9 py-1" @click="discardDraft">{{ $t('draft.discard') }}</button>
+    <p v-if="restored || prefilled" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-info-ink p-3 font-semibold text-info-ink" role="status">
+      {{ $t(restored ? 'draft.restored' : 'draft.prefilled') }}
+      <button type="button" class="btn btn-ghost min-h-9 py-1" @click="discardDraft">{{ $t(restored ? 'draft.discard' : 'draft.clear') }}</button>
     </p>
 
     <div v-if="!games.length" class="card space-y-3 p-6">
@@ -263,6 +278,16 @@ async function publish() {
             <input v-model.number="form.price" type="number" class="input" :min="PRICE_MIN" :max="PRICE_MAX" step="1" data-testid="price" />
             <span class="field-hint">{{ $t('wizard.priceHint', { min: PRICE_MIN, max: PRICE_MAX }) }}</span>
           </label>
+          <div class="rounded-xl border-2 p-3" :class="ADVICE_STYLE[advice.tier]" role="status" data-testid="price-advice">
+            <p class="font-semibold">
+              <span aria-hidden="true">{{ ADVICE_ICON[advice.tier] }}</span> {{ $t(`wizard.advice.${advice.tier}`) }}
+            </p>
+            <p class="text-sm text-ink">{{ $t('wizard.advice.scale', { fair: advice.fair, fast: advice.fast, playtime: $t(`presets.playtime.${form.playtimePreset}`) }) }}</p>
+          </div>
+          <div class="flex flex-wrap gap-2 text-sm">
+            <button type="button" class="btn btn-ghost min-h-9 py-1" @click="form.price = advice.fair">{{ $t('wizard.advice.useFair', { n: advice.fair }) }}</button>
+            <button type="button" class="btn btn-ghost min-h-9 py-1" @click="form.price = advice.fast">⚡ {{ $t('wizard.advice.useFast', { n: advice.fast }) }}</button>
+          </div>
         </div>
         <label class="block max-w-xs">
           <span class="field-label">{{ $t('wizard.slots') }}</span>

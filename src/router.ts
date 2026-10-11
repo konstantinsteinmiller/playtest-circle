@@ -39,3 +39,16 @@ router.beforeEach(async (to) => {
   if (!session.me.onboarded && to.name !== 'tutorial') return { name: 'tutorial' }
   return true
 })
+
+// After a deploy, an open tab still points at old chunk hashes that no longer exist.
+// Load the target page fresh instead of failing (form drafts survive the reload).
+router.onError((err, to) => {
+  if (/dynamically imported module|Importing a module script failed|module script/i.test(String(err?.message))) {
+    const key = 'ptc-chunk-reload'
+    try {
+      if (sessionStorage.getItem(key) === to.fullPath) return
+      sessionStorage.setItem(key, to.fullPath)
+    } catch {}
+    window.location.assign(to.fullPath)
+  }
+})

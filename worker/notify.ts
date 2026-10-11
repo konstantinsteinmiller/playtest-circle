@@ -49,7 +49,7 @@ export async function notify(
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          username: 'Play Testing Circle',
+          username: 'Playtest Circle',
           embeds: [{ title, description: body, url, color: 0xc6ff3d }],
         }),
       }),

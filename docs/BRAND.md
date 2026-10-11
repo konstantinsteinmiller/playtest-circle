@@ -1,6 +1,6 @@
-# Brand — Play Testing Circle
+# Brand — Playtest Circle
 
-**Name:** Play Testing Circle
+**Name:** Playtest Circle
 **Tagline:** *Quid pro quo playtesting*
 **One-liner:** Game devs test each other's games — record the session, answer real questions, earn Credits, spend them on your own game.
 

@@ -66,7 +66,7 @@ meRoutes.post('/me/test-discord', async (c) => {
   const res = await fetch(row.discord_webhook, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ username: 'Play Testing Circle', content: tr('notifications.discordTest') }),
+    body: JSON.stringify({ username: 'Playtest Circle', content: tr('notifications.discordTest') }),
   })
   return c.json({ ok: res.ok })
 })

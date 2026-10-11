@@ -70,5 +70,10 @@ export function useDraft<T>(name: string, source: Ref<T> | (() => T), apply: (da
       active = false
       clear()
     },
+    /** Keep the current values as the prefill for the next form, then stop saving from this instance. */
+    keep() {
+      save()
+      active = false
+    },
   }
 }

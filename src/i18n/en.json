@@ -1,8 +1,8 @@
 {
   "brand": {
-    "name": "Play Testing Circle",
+    "name": "Playtest Circle",
     "tagline": "Quid pro quo playtesting",
-    "logoAlt": "Play Testing Circle logo: two arrows forming a circle around a play button"
+    "logoAlt": "Playtest Circle logo: two arrows forming a circle around a play button"
   },
   "common": {
     "credits": "{n} Credits | {n} Credit | {n} Credits",
@@ -36,7 +36,9 @@
   },
   "draft": {
     "restored": "We restored your unsaved draft.",
-    "discard": "Discard draft"
+    "discard": "Discard draft",
+    "prefilled": "Prefilled with the settings of your last campaign.",
+    "clear": "Start empty"
   },
   "nav": {
     "browse": "Browse playtests",
@@ -61,7 +63,7 @@
     "system": "System"
   },
   "footer": {
-    "openSource": "Play Testing Circle is open source and free — built by a game dev for game devs, with no profit motive. Read the code, copy it, improve it.",
+    "openSource": "Playtest Circle is open source and free — built by a game dev for game devs, with no profit motive. Read the code, copy it, improve it.",
     "github": "Source code on GitHub",
     "roadmap": "Roadmap",
     "privacy": "Privacy",
@@ -98,7 +100,7 @@
     "gated": "Members only: Google sign-in is the only way in."
   },
   "tutorial": {
-    "title": "How Play Testing Circle works",
+    "title": "How Playtest Circle works",
     "lead": "Two minutes to read. Submitting your own game takes about 5 minutes.",
     "step1Title": "1 · Earn Credits by testing",
     "step1Body": "Open Browse, pick a game that looks interesting, read what the dev wants to know, then press Start playtest. The game opens in a new tab and you share that tab, so the whole page is recorded — UI included. Play, mark interesting moments, answer the questions. When you reach the minimum playtime and answer every required question, the Credits are yours automatically.",
@@ -308,38 +310,134 @@
       "performance": "Performance & bugs",
       "overall": "Overall"
     },
-    "controls_feel": { "text": "How do the controls feel?", "hint": "Weight, precision, input delay, whether moves do what you expect." },
-    "controls_responsive": { "text": "How responsive is the game to your input?", "hint": "Any lag, dropped inputs or animations you have to wait for?" },
-    "controls_intuitive": { "text": "I knew how to control the game without reading anything.", "hint": "Note every moment you had to guess a key or button." },
-    "onboarding_goal_clear": { "text": "Within the first minute I understood what I'm supposed to do.", "hint": "When exactly did the goal click — or did it never?" },
-    "onboarding_first3": { "text": "How well do the first 3 minutes hook you?", "hint": "Would you keep playing if you'd found this game on a portal?" },
-    "onboarding_tutorial": { "text": "How good is the tutorial?", "hint": "Too long, too short, too wordy, skipped something important?" },
-    "progression_short": { "text": "Does progression work in the first minutes?", "hint": "Do you feel yourself getting stronger or better quickly enough?" },
-    "progression_long": { "text": "Does the progression system look like it works long-term?", "hint": "Is there a reason to come back tomorrow? What would you grind for?" },
-    "progression_rewards": { "text": "Rewards feel worth the effort.", "hint": "Name a reward that felt great and one that felt pointless." },
-    "difficulty_curve": { "text": "How well does the difficulty ramp up?", "hint": "Spikes, flat stretches, sudden walls." },
-    "difficulty_missing_challenge": { "text": "There were stretches where a challenge was missing.", "hint": "Where did you play on autopilot?" },
-    "difficulty_unfair": { "text": "Some moments felt unfair rather than hard.", "hint": "Deaths you couldn't see coming or couldn't avoid." },
-    "bosses_too_hard": { "text": "A boss was too hard to be fun.", "hint": "Which boss, how many attempts, what killed you?" },
-    "bosses_too_easy": { "text": "A boss was so easy it gave no reason to keep playing.", "hint": "Did any boss fall before you learned its pattern?" },
-    "bosses_readable": { "text": "How readable are the boss attacks?", "hint": "Telegraphs, warning signs, time to react." },
-    "pacing_boring": { "text": "Where would you drop out because it gets boring?", "hint": "Give the moment or the timestamp — mark it while you play." },
-    "pacing_one_more": { "text": "I had the \"one more try\" feeling.", "hint": "What gave it to you — or what was missing?" },
-    "stuck_where": { "text": "Where did you get stuck, and for how long?", "hint": "Being lost, not knowing what to do next, a puzzle that didn't click." },
-    "stuck_confusing": { "text": "Some mechanics were confusing.", "hint": "Which one, and what did you think it did?" },
-    "ui_readable": { "text": "How readable is the UI and text?", "hint": "Font size, contrast, clutter, important info you missed." },
-    "ui_feedback": { "text": "How clear is the game's feedback on your actions?", "hint": "Hits, damage, rewards, errors — did you always know what happened?" },
-    "audio_quality": { "text": "How good is the audio?", "hint": "Music fit, volume balance, annoying loops." },
-    "audio_feedback": { "text": "Sound effects help me understand what's happening.", "hint": "Hits, warnings, pickups — would you miss them if muted?" },
-    "visuals_style": { "text": "How appealing is the visual style?", "hint": "Would it make you click on a thumbnail?" },
-    "visuals_clarity": { "text": "How clear is the screen during action?", "hint": "Can you tell player, enemies, hazards and pickups apart?" },
-    "performance_smooth": { "text": "How smoothly does the game run?", "hint": "Frame drops, stutters, long loading. Mention your device." },
-    "performance_bugs": { "text": "Which bugs did you find?", "hint": "What you did, what happened, what you expected. Mark the moment." },
-    "overall_fun": { "text": "How much fun did you have?", "hint": "Be honest — that's what the circle is for." },
-    "overall_return": { "text": "I'd play this again after the playtest.", "hint": "What would bring you back?" },
-    "sys_overall": { "text": "Overall, how ready does this build feel?", "hint": "Your gut feeling as a fellow dev." },
-    "sys_stuck": { "text": "Anything else the dev should know?", "hint": "Bugs, ideas, the one change you'd make first." },
-    "sys_quit_reason": { "text": "Did you stop before the target playtime? Why?", "hint": "Required if you stopped before the minimum." }
+    "controls_feel": {
+      "text": "How do the controls feel?",
+      "hint": "Weight, precision, input delay, whether moves do what you expect."
+    },
+    "controls_responsive": {
+      "text": "How responsive is the game to your input?",
+      "hint": "Any lag, dropped inputs or animations you have to wait for?"
+    },
+    "controls_intuitive": {
+      "text": "I knew how to control the game without reading anything.",
+      "hint": "Note every moment you had to guess a key or button."
+    },
+    "onboarding_goal_clear": {
+      "text": "Within the first minute I understood what I'm supposed to do.",
+      "hint": "When exactly did the goal click — or did it never?"
+    },
+    "onboarding_first3": {
+      "text": "How well do the first 3 minutes hook you?",
+      "hint": "Would you keep playing if you'd found this game on a portal?"
+    },
+    "onboarding_tutorial": {
+      "text": "How good is the tutorial?",
+      "hint": "Too long, too short, too wordy, skipped something important?"
+    },
+    "progression_short": {
+      "text": "Does progression work in the first minutes?",
+      "hint": "Do you feel yourself getting stronger or better quickly enough?"
+    },
+    "progression_long": {
+      "text": "Does the progression system look like it works long-term?",
+      "hint": "Is there a reason to come back tomorrow? What would you grind for?"
+    },
+    "progression_rewards": {
+      "text": "Rewards feel worth the effort.",
+      "hint": "Name a reward that felt great and one that felt pointless."
+    },
+    "difficulty_curve": {
+      "text": "How well does the difficulty ramp up?",
+      "hint": "Spikes, flat stretches, sudden walls."
+    },
+    "difficulty_missing_challenge": {
+      "text": "There were stretches where a challenge was missing.",
+      "hint": "Where did you play on autopilot?"
+    },
+    "difficulty_unfair": {
+      "text": "Some moments felt unfair rather than hard.",
+      "hint": "Deaths you couldn't see coming or couldn't avoid."
+    },
+    "bosses_too_hard": {
+      "text": "A boss was too hard to be fun.",
+      "hint": "Which boss, how many attempts, what killed you?"
+    },
+    "bosses_too_easy": {
+      "text": "A boss was so easy it gave no reason to keep playing.",
+      "hint": "Did any boss fall before you learned its pattern?"
+    },
+    "bosses_readable": {
+      "text": "How readable are the boss attacks?",
+      "hint": "Telegraphs, warning signs, time to react."
+    },
+    "pacing_boring": {
+      "text": "Where would you drop out because it gets boring?",
+      "hint": "Give the moment or the timestamp — mark it while you play."
+    },
+    "pacing_one_more": {
+      "text": "I had the \"one more try\" feeling.",
+      "hint": "What gave it to you — or what was missing?"
+    },
+    "stuck_where": {
+      "text": "Where did you get stuck, and for how long?",
+      "hint": "Being lost, not knowing what to do next, a puzzle that didn't click."
+    },
+    "stuck_confusing": {
+      "text": "Some mechanics were confusing.",
+      "hint": "Which one, and what did you think it did?"
+    },
+    "ui_readable": {
+      "text": "How readable is the UI and text?",
+      "hint": "Font size, contrast, clutter, important info you missed."
+    },
+    "ui_feedback": {
+      "text": "How clear is the game's feedback on your actions?",
+      "hint": "Hits, damage, rewards, errors — did you always know what happened?"
+    },
+    "audio_quality": {
+      "text": "How good is the audio?",
+      "hint": "Music fit, volume balance, annoying loops."
+    },
+    "audio_feedback": {
+      "text": "Sound effects help me understand what's happening.",
+      "hint": "Hits, warnings, pickups — would you miss them if muted?"
+    },
+    "visuals_style": {
+      "text": "How appealing is the visual style?",
+      "hint": "Would it make you click on a thumbnail?"
+    },
+    "visuals_clarity": {
+      "text": "How clear is the screen during action?",
+      "hint": "Can you tell player, enemies, hazards and pickups apart?"
+    },
+    "performance_smooth": {
+      "text": "How smoothly does the game run?",
+      "hint": "Frame drops, stutters, long loading. Mention your device."
+    },
+    "performance_bugs": {
+      "text": "Which bugs did you find?",
+      "hint": "What you did, what happened, what you expected. Mark the moment."
+    },
+    "overall_fun": {
+      "text": "How much fun did you have?",
+      "hint": "Be honest — that's what the circle is for."
+    },
+    "overall_return": {
+      "text": "I'd play this again after the playtest.",
+      "hint": "What would bring you back?"
+    },
+    "sys_overall": {
+      "text": "Overall, how ready does this build feel?",
+      "hint": "Your gut feeling as a fellow dev."
+    },
+    "sys_stuck": {
+      "text": "Anything else the dev should know?",
+      "hint": "Bugs, ideas, the one change you'd make first."
+    },
+    "sys_quit_reason": {
+      "text": "Did you stop before the target playtime? Why?",
+      "hint": "Required if you stopped before the minimum."
+    }
   },
   "studio": {
     "title": "My studio",
@@ -453,6 +551,15 @@
       "insufficient_credits": "Not enough Credits for this campaign.",
       "recording_quota_exceeded": "You're over your recording storage limit. Delete watched recordings first.",
       "custom_text_length": "Custom questions need 3–300 characters."
+    },
+    "advice": {
+      "low": "Too low — testers will mostly skip this one and it may sit for days.",
+      "under": "Below fair — it will get tested, but slowly.",
+      "fair": "Fair — a good trade for the playtime you ask for.",
+      "fast": "Fast round — sits near the top of Browse and usually fills quickly.",
+      "scale": "For {playtime}: fair from {fair} Credits, fast from {fast} Credits.",
+      "useFair": "Use fair ({n})",
+      "useFast": "Use fast ({n})"
     }
   },
   "results": {
@@ -551,18 +658,39 @@
     "empty": "You're all caught up.",
     "markRead": "Mark all as read",
     "unread": "{n} unread notifications | {n} unread notification | {n} unread notifications",
-    "discordTest": "✅ Play Testing Circle can reach this channel.",
-    "playtest_received": { "title": "New playtest for {game}", "body": "{tester} finished a session of {game}. Watch the recording before it's deleted in 3 days." },
-    "recording_expiring": { "title": "A recording of {game} is deleted tomorrow", "body": "Watch it now if you still need it — or delete it yourself to free up space." },
-    "recording_evicted": { "title": "A recording of {game} was removed", "body": "Storage was running out, so the oldest recordings were removed — already watched ones first." },
-    "campaign_completed": { "title": "Your {game} campaign is complete", "body": "All tests are done. Open the results to see what testers said." },
-    "escrow_refunded": { "title": "Escrow refunded", "body": "Unused Credits from your {game} campaign are back in your wallet." },
-    "credits_earned": { "title": "+{credits} Credits", "body": "Thanks for testing {game}!" },
-    "credits_granted": { "title": "+{credits} Credits", "body": "An admin added Credits to your wallet." }
+    "discordTest": "✅ Playtest Circle can reach this channel.",
+    "playtest_received": {
+      "title": "New playtest for {game}",
+      "body": "{tester} finished a session of {game}. Watch the recording before it's deleted in 3 days."
+    },
+    "recording_expiring": {
+      "title": "A recording of {game} is deleted tomorrow",
+      "body": "Watch it now if you still need it — or delete it yourself to free up space."
+    },
+    "recording_evicted": {
+      "title": "A recording of {game} was removed",
+      "body": "Storage was running out, so the oldest recordings were removed — already watched ones first."
+    },
+    "campaign_completed": {
+      "title": "Your {game} campaign is complete",
+      "body": "All tests are done. Open the results to see what testers said."
+    },
+    "escrow_refunded": {
+      "title": "Escrow refunded",
+      "body": "Unused Credits from your {game} campaign are back in your wallet."
+    },
+    "credits_earned": {
+      "title": "+{credits} Credits",
+      "body": "Thanks for testing {game}!"
+    },
+    "credits_granted": {
+      "title": "+{credits} Credits",
+      "body": "An admin added Credits to your wallet."
+    }
   },
   "mail": {
-    "open": "Open Play Testing Circle",
-    "footer": "You get this email because email notifications are on in your Play Testing Circle settings. Turn them off there at any time."
+    "open": "Open Playtest Circle",
+    "footer": "You get this email because email notifications are on in your Playtest Circle settings. Turn them off there at any time."
   },
   "profile": {
     "reputation": "Reputation",
@@ -604,11 +732,11 @@
       "s5Title": "Your rights",
       "s5Body": "You can see your data on the platform at any time, turn email notifications off in Settings and delete your account there. Deleting your account removes your personal data and every recording you are part of. Under the GDPR you also have the right to information, correction, restriction and objection — contact us via the imprint.",
       "s6Title": "Open source",
-      "s6Body": "The entire source code of Play Testing Circle is public on GitHub, so you can check exactly what happens with your data."
+      "s6Body": "The entire source code of Playtest Circle is public on GitHub, so you can check exactly what happens with your data."
     },
     "terms": {
       "s1Title": "A circle of game developers",
-      "s1Body": "Play Testing Circle is a free community for game developers. One account per person. Be respectful: you're testing a colleague's work.",
+      "s1Body": "Playtest Circle is a free community for game developers. One account per person. Be respectful: you're testing a colleague's work.",
       "s2Title": "Honest, useful feedback",
       "s2Body": "Play the game seriously and answer the questions honestly. Credits are paid automatically once the minimum playtime is reached and all required questions are answered. Abuse of the system (fake sessions, idle recordings, multiple accounts) leads to a ban.",
       "s3Title": "What you may post",

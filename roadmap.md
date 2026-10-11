@@ -1,6 +1,6 @@
 # Roadmap
 
-Play Testing Circle is open source and free. These are the next steps, roughly in order of value.
+Playtest Circle is open source and free. These are the next steps, roughly in order of value.
 
 ## Credits & money
 
@@ -25,3 +25,7 @@ Play Testing Circle is open source and free. These are the next steps, roughly i
 ## Reliability
 
 - IndexedDB crash-resume for recordings (today a crashed tab loses the parts not yet uploaded).
+
+
+- [] we need a quick onboard video with pictograms explaining the usage of the playtest circle platform.
+- 

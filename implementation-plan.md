@@ -1,4 +1,4 @@
-# Play Testing Circle — implementation plan
+# Playtest Circle — implementation plan
 
 > *Quid pro quo playtesting.* An open-source, gated community where game devs earn **Credits** by playtesting each other's games and spend them to get their own games tested.
 
@@ -196,13 +196,13 @@ Indexes cover the browse query (status, price DESC, published_at) and per-owner 
 
 ## Brand & UI
 
-- **Logo** (SVG, also favicon + OG image): two arrows chasing each other in a circle (the quid-pro-quo exchange), with a play triangle in the centre. Wordmark: **Play Testing Circle**, subtitle *Quid pro quo playtesting*.
+- **Logo** (SVG, also favicon + OG image): two arrows chasing each other in a circle (the quid-pro-quo exchange), with a play triangle in the centre. Wordmark: **Playtest Circle**, subtitle *Quid pro quo playtesting*.
 - **Palette:** high contrast, WCAG AA minimum and AAA for body text. Near-black `#0B0B10` / off-white `#F7F7F2`, primary electric lime `#C6FF3D`, accent hot magenta `#FF3DA5`, info cyan `#3DD9FF`. Status colours are always paired with an icon and label, never colour alone.
 - **Type:** Space Grotesk for display, Inter for UI. Large hit targets and visible focus rings.
 - **Theme:** dark by default, with a Light / Dark / System toggle in the header and an inline pre-paint script so there's no flash. Colours are CSS tokens on `:root` with a `[data-theme]` override, mapped into Tailwind v4 `@theme`.
 - **Style:** fresh, slightly "game-y" (chunky cards, subtle glow on the lime CTA, motion that respects `prefers-reduced-motion`).
 - `docs/BRAND.md`: name, tagline, voice ("dev-to-dev, direct, generous"), logo usage, colour tokens with contrast ratios, type scale.
-- **Footer on every page:** "Play Testing Circle is open source and free — built by a game dev for game devs, no profit motive." Plus links to GitHub, Roadmap, Privacy, Terms and Imprint.
+- **Footer on every page:** "Playtest Circle is open source and free — built by a game dev for game devs, no profit motive." Plus links to GitHub, Roadmap, Privacy, Terms and Imprint.
 - **Legal pages:** Privacy (what's recorded, who can see it: only the campaign owner + the tester; 3-day deletion; account deletion), Terms (no NSFW without a tag, no malware links) and **Imprint**. An Impressum is legally required in Germany, so it's a placeholder you fill in.
 - **Account deletion** in Settings (GDPR): anonymises the user and deletes their recordings.
 - All user-facing copy goes through vue-i18n `src/i18n/en.json`, with aria-labels included.
