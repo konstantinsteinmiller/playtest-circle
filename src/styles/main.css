@@ -143,3 +143,23 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Tailwind v4 resets buttons to the default cursor; everything clickable shows a pointer. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='radio'],
+  [role='tab'],
+  [role='menuitem'],
+  summary,
+  select,
+  label:has(> input[type='file']),
+  input[type='checkbox'],
+  input[type='radio'] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
