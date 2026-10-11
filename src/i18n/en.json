@@ -770,7 +770,27 @@
     "bannedChip": "Banned",
     "authRequired": "The admin panel needs the admin password. Reload the page to enter it.",
     "disabled": "The admin panel is off. Set BASIC_AUTH_PASSWORD to enable it.",
-    "reason": "Reason: {reason}"
+    "reason": "Reason: {reason}",
+    "search": "Search members",
+    "searchPlaceholder": "Name, email or ID",
+    "filter": "Show",
+    "sort": "Sort by",
+    "filters": {
+      "all": "Everyone",
+      "active": "Active",
+      "banned": "Banned",
+      "warned": "Warned",
+      "admins": "Admins"
+    },
+    "sorts": {
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "name": "Name",
+      "credits": "Most Credits",
+      "tests": "Most paid tests",
+      "warnings": "Most warnings"
+    },
+    "shown": "{n} of {total} members"
   },
   "legal": {
     "privacyTitle": "Privacy",

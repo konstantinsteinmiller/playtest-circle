@@ -22,6 +22,12 @@ test('admin panel is password gated and can warn and ban users', async ({ browse
   await admin.goto('/admin')
   const row = admin.getByRole('row', { name: new RegExp(`Troll ${stamp}`) })
   await expect(row).toBeVisible()
+  // Search narrows the list; filters combine with it.
+  await admin.getByTestId('user-search').fill(`troll${stamp}`)
+  await expect(admin.getByRole('row')).toHaveCount(2) // header + match
+  await admin.getByTestId('user-filter').selectOption('banned')
+  await expect(admin.getByRole('row')).toHaveCount(1)
+  await admin.getByTestId('user-filter').selectOption('all')
 
   admin.once('dialog', (d) => d.accept('Please stop posting fake feedback.'))
   await row.getByTestId('warn').click()

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api, ApiError } from '@/lib/api'
 import { formatBytes } from '@/lib/format'
@@ -16,6 +16,7 @@ interface AdminUser {
   ban_reason: string | null
   paid_tests: number
   warnings: number
+  created_at: number
 }
 interface AdminCampaign {
   id: string
@@ -34,6 +35,33 @@ const campaigns = ref<AdminCampaign[]>([])
 const storage = ref({ bytes: 0, n: 0, budget: 1 })
 
 const blocked = ref<'' | 'auth' | 'disabled'>('')
+
+// Finding a member: free-text search over name, email and id, plus a status filter and sort.
+type UserFilter = 'all' | 'active' | 'banned' | 'warned' | 'admins'
+type UserSort = 'newest' | 'oldest' | 'name' | 'credits' | 'tests' | 'warnings'
+const query = ref('')
+const filter = ref<UserFilter>('all')
+const sort = ref<UserSort>('newest')
+const shownUsers = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  const list = users.value.filter((u) => {
+    if (q && ![u.name, u.email, u.id].some((v) => v?.toLowerCase().includes(q))) return false
+    if (filter.value === 'active') return !u.banned_at
+    if (filter.value === 'banned') return !!u.banned_at
+    if (filter.value === 'warned') return u.warnings > 0
+    if (filter.value === 'admins') return u.role === 'admin'
+    return true
+  })
+  const by: Record<UserSort, (a: AdminUser, b: AdminUser) => number> = {
+    newest: (a, b) => b.created_at - a.created_at,
+    oldest: (a, b) => a.created_at - b.created_at,
+    name: (a, b) => a.name.localeCompare(b.name),
+    credits: (a, b) => b.credits - a.credits,
+    tests: (a, b) => b.paid_tests - a.paid_tests,
+    warnings: (a, b) => b.warnings - a.warnings,
+  }
+  return [...list].sort(by[sort.value])
+})
 
 async function load() {
   let r
@@ -88,6 +116,25 @@ async function hide(c: AdminCampaign) {
     <p class="card p-4 font-semibold">{{ $t('admin.storage', { used: formatBytes(storage.bytes), budget: formatBytes(storage.budget) }) }} ({{ storage.n }})</p>
     <section class="space-y-3">
       <h2 class="h2">{{ $t('admin.users') }}</h2>
+      <div class="flex flex-wrap items-end gap-3">
+        <label class="block min-w-0 flex-1 basis-64">
+          <span class="field-label">{{ $t('admin.search') }}</span>
+          <input v-model="query" type="search" class="input" :placeholder="$t('admin.searchPlaceholder')" data-testid="user-search" />
+        </label>
+        <label class="block">
+          <span class="field-label">{{ $t('admin.filter') }}</span>
+          <select v-model="filter" class="input" data-testid="user-filter">
+            <option v-for="f in ['all', 'active', 'banned', 'warned', 'admins']" :key="f" :value="f">{{ $t(`admin.filters.${f}`) }}</option>
+          </select>
+        </label>
+        <label class="block">
+          <span class="field-label">{{ $t('admin.sort') }}</span>
+          <select v-model="sort" class="input" data-testid="user-sort">
+            <option v-for="s in ['newest', 'oldest', 'name', 'credits', 'tests', 'warnings']" :key="s" :value="s">{{ $t(`admin.sorts.${s}`) }}</option>
+          </select>
+        </label>
+      </div>
+      <p class="text-sm text-muted" role="status">{{ $t('admin.shown', { n: shownUsers.length, total: users.length }) }}</p>
       <div class="card overflow-x-auto">
         <table class="w-full min-w-[640px] text-left">
           <thead class="border-b-2 border-line text-sm text-muted">
@@ -101,7 +148,7 @@ async function hide(c: AdminCampaign) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="u in users" :key="u.id" class="border-b border-line last:border-0">
+            <tr v-for="u in shownUsers" :key="u.id" class="border-b border-line last:border-0">
               <td class="p-3 font-semibold">
                 {{ u.name }} <span v-if="u.banned_at" class="chip text-danger-ink">{{ $t('admin.bannedChip') }}</span>
                 <span v-if="u.ban_reason" class="block text-sm font-normal text-muted">{{ $t('admin.reason', { reason: u.ban_reason }) }}</span>

@@ -1,0 +1,2 @@
+# Test-only values for `CLOUDFLARE_ENV=e2e` (replaces .dev.vars for the e2e run; nothing secret here).
+BASIC_AUTH_PASSWORD=e2e-admin-password
