@@ -9,7 +9,7 @@ import { storage } from '../storage'
 
 export const gameRoutes = new Hono<AppEnv>()
 
-const HOSTS: GameHost[] = ['itch', 'wavedash', 'crazygames', 'newgrounds', 'own', 'other']
+const HOSTS: GameHost[] = ['itch', 'steam', 'wavedash', 'crazygames', 'newgrounds', 'own', 'other']
 const IMAGE_TYPES = ['image/webp', 'image/png', 'image/jpeg']
 const CLIP_TYPES = ['video/mp4']
 

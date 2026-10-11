@@ -58,7 +58,8 @@ storageRoutes.put('/local-storage/part', async (c) => {
   const q = new URL(c.req.url).searchParams
   if (!(await verifyLocalSignature(c.env, 'part', q))) fail(403, 'bad_signature')
   const mpu = c.env.LOCAL_BUCKET.resumeMultipartUpload(q.get('key')!, q.get('uploadId')!)
-  const part = await mpu.uploadPart(Number(q.get('part')), await c.req.arrayBuffer())
-  await c.env.LOCAL_BUCKET.put(`${localPartPrefix(q.get('uploadId')!)}${q.get('part')}`, part.etag)
+  const body = await c.req.arrayBuffer()
+  const part = await mpu.uploadPart(Number(q.get('part')), body)
+  await c.env.LOCAL_BUCKET.put(`${localPartPrefix(q.get('uploadId')!)}${q.get('part')}`, JSON.stringify({ etag: part.etag, size: body.byteLength }))
   return c.body(null, 200, { etag: part.etag, 'access-control-expose-headers': 'ETag' })
 })

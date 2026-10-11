@@ -16,7 +16,7 @@ const { t } = useI18n()
 const errorText = useErrorText()
 const editId = computed(() => (route.params.id ? String(route.params.id) : null))
 
-const hosts: GameHost[] = ['itch', 'wavedash', 'crazygames', 'newgrounds', 'own', 'other']
+const hosts: GameHost[] = ['itch', 'steam', 'wavedash', 'crazygames', 'newgrounds', 'own', 'other']
 const form = reactive({
   title: '',
   pitch: '',

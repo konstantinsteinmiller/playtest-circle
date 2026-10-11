@@ -1,6 +1,8 @@
 export interface UploadedPart {
   partNumber: number
   etag: string
+  /** Bytes, when known (storage listings report it; the client doesn't). */
+  size?: number
 }
 
 /** Object storage seen through presigned URLs, so large bodies never pass the Worker in production. */

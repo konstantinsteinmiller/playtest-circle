@@ -46,10 +46,10 @@ export class LocalDriver implements StorageDriver {
     // R2 bindings can't list parts, so the local part route leaves a marker per part.
     const listed = await this.env.LOCAL_BUCKET.list({ prefix: localPartPrefix(uploadId) })
     return Promise.all(
-      listed.objects.map(async (o) => ({
-        partNumber: Number(o.key.split('/').pop()),
-        etag: (await (await this.env.LOCAL_BUCKET.get(o.key))!.text()) || '',
-      })),
+      listed.objects.map(async (o) => {
+        const m = JSON.parse((await (await this.env.LOCAL_BUCKET.get(o.key))!.text()) || '{}') as { etag?: string; size?: number }
+        return { partNumber: Number(o.key.split('/').pop()), etag: m.etag ?? '', size: m.size ?? 0 }
+      }),
     )
   }
 

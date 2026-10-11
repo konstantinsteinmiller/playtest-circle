@@ -253,14 +253,20 @@ export async function salvageUpload(st: StorageDriver, key: string, uploadId: st
     await st.abortMultipart(key, uploadId).catch(() => {})
     return 0
   }
+  const listedBytes = parts.reduce((n, p) => n + (p.size ?? 0), 0)
   try {
-    await st.completeMultipart(key, uploadId, parts)
-    return (await st.size(key)) ?? 0
+    await st.completeMultipart(key, uploadId, parts.map(({ partNumber, etag }) => ({ partNumber, etag })))
   } catch (e) {
+    // The upload may have completed anyway (e.g. a retried request): trust the object if it exists.
+    const existing = await st.size(key).catch(() => null)
+    if (existing) return existing
     console.error('[salvage] complete failed', key, parts.length, e)
     await st.abortMultipart(key, uploadId).catch(() => {})
     return 0
   }
+  const size = await st.size(key).catch(() => null)
+  if (!size) console.error('[salvage] size unknown after complete', key, 'listed', listedBytes)
+  return size || listedBytes
 }
 
 export type DeleteReason = 'owner' | 'expired' | 'evicted' | 'account_deleted' | 'abandoned'

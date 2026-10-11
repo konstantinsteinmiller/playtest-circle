@@ -1,12 +1,10 @@
 import { ref } from 'vue'
-import { useSession } from '@/stores/session'
 
 /**
- * Detects ad/tracker blockers that would stop recording uploads: a bait element that blockers hide,
- * plus a direct request to the storage host the recording goes to.
+ * Detects ad/tracker blockers, which can stop recording uploads, with a bait element that blockers hide.
+ * (Probing the storage host directly logs a 403 in the console, which looks like a failure to testers.)
  */
 export function useBlockerCheck() {
-  const session = useSession()
   const blocked = ref(false)
   const checking = ref(false)
 
@@ -22,22 +20,10 @@ export function useBlockerCheck() {
     return hidden
   }
 
-  async function storageBlocked(): Promise<boolean> {
-    const origin = session.config.storageOrigin
-    if (!origin) return false
-    try {
-      await fetch(origin, { mode: 'no-cors', cache: 'no-store' })
-      return false
-    } catch {
-      return true
-    }
-  }
-
   async function check() {
     checking.value = true
     try {
-      const [a, b] = await Promise.all([baitHidden(), storageBlocked()])
-      blocked.value = a || b
+      blocked.value = await baitHidden()
     } finally {
       checking.value = false
     }

@@ -12,7 +12,7 @@ Playtest Circle is open source and free. These are the next steps, roughly in or
 - Custom domain + a verified sending domain for email (switch `MAIL_DRIVER` to `resend`).
 - More languages (German first) — every string already goes through `src/i18n/en.json`.
 - Team / studio accounts sharing one wallet and one studio.
-- Downloadable-build and Steam-key campaigns (desktop/window capture instead of tab capture).
+- Downloadable-build campaigns (Steam games already work with window capture).
 - Per-campaign NDA toggle.
 - Dispute flow, if fully automatic payouts get abused.
 

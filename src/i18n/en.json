@@ -180,7 +180,8 @@
     "crazygames": "CrazyGames",
     "newgrounds": "Newgrounds",
     "own": "Own website",
-    "other": "Other"
+    "other": "Other",
+    "steam": "Steam"
   },
   "campaign": {
     "startPlaytest": "Start playtest",
@@ -217,11 +218,11 @@
     "micLabel": "Think aloud: also record my microphone",
     "micHint": "Talking while you play is the most useful feedback there is. Optional.",
     "step1": "Open the game",
-    "step1Body": "The game opens in a new tab. Come back to this tab for the next step.",
+    "step1Body": "The game opens in a new tab. Come back here once for step 2.",
     "openGame": "Open game in new tab",
     "gameOpened": "Game tab opened",
     "step2": "Start recording",
-    "step2Body": "In the dialog, choose the \"Chrome Tab\" option and select the game's tab. Keep \"Share tab audio\" on.",
+    "step2Body": "In the dialog, choose the \"Chrome Tab\" option and select the game's tab. Keep \"Share tab audio\" on. Recording starts the moment you share, and Chrome takes you to the game — just play.",
     "startRecording": "Start recording",
     "wrongSurface": "Please share the game's browser tab (not a window or the whole screen) so all of the game's UI is captured.",
     "permissionDenied": "Recording was blocked. Allow screen sharing and try again.",
@@ -269,6 +270,22 @@
       "body": "Blockers can stop the screen recording from uploading, and then the playtest can't pay out. Please allow this site in your blocker (or pause it) and reload the page before you start.",
       "recheck": "Check again",
       "ok": "No blocker detected."
+    },
+    "mic": {
+      "asking": "Allow the microphone in the browser prompt…",
+      "granted": "✓ Microphone ready — it starts recording together with the tab.",
+      "denied": "Microphone blocked — you can still play; only the tab is recorded."
+    },
+    "received": {
+      "ok": "Your video arrived ({mb} MB). Answer the questions to earn your Credits.",
+      "missing": "Your video didn't reach us, so this playtest can't pay out. Before you answer anything, record again — if you use an ad or tracker blocker, pause it for this site first.",
+      "retry": "Record again"
+    },
+    "steam": {
+      "step1Body": "This is a Steam game: open its Steam page, install it and start it (see the access notes for keys or playtest access). Come back here once for step 2.",
+      "openGame": "Open on Steam",
+      "gameOpened": "Steam page opened",
+      "step2Body": "In the dialog, choose \"Window\" and select the game's window (or \"Entire screen\" if it runs fullscreen). Recording starts the moment you share — then switch to the game and play."
     }
   },
   "question": {

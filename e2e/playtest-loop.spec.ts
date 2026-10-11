@@ -50,6 +50,9 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
 
   await expect(tester.getByTestId('device-instructions')).toContainText('Desktop + mobile')
   await tester.getByTestId('consent').check()
+  // Mic is asked before the game opens, so recording starts right after the tab is shared.
+  await tester.getByTestId('mic').check()
+  await expect(tester.getByTestId('mic-state')).toContainText('Microphone ready')
   const [gameTab] = await Promise.all([testerCtx.waitForEvent('page'), tester.getByTestId('open-game').click()])
   await gameTab.waitForLoadState()
   await expect(gameTab).toHaveTitle('Fixture Game')
@@ -57,6 +60,7 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
 
   await tester.getByTestId('start-recording').click()
   await expect(tester.getByTestId('elapsed')).toBeVisible()
+  expect((await (await tester.request.get(tester.url().replace('/play/', '/api/playtests/'))).json()).playtest.usedMic).toBe(true)
 
   await tester.waitForTimeout(1500)
   await tester.getByTestId('mark-moment').click()
@@ -70,6 +74,7 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
   // Questionnaire: pick a rating and write a comment everywhere.
   const fields = tester.locator('fieldset')
   await expect(fields.first()).toBeVisible()
+  await expect(tester.getByTestId('video-received')).toBeVisible()
   // An accidental reload mid-questionnaire keeps the answers and the uploaded recording.
   await fields.first().locator('textarea').fill('Typed before the reload')
   await tester.waitForTimeout(500)

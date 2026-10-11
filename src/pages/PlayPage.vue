@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener, useIntervalFn, useRafFn } from '@vueuse/core'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { countAnswered, type AnswerInput, type CampaignQuestion } from '@shared/questions'
@@ -35,7 +35,35 @@ const supported = recordingSupported()
 
 const consent = ref(false)
 const withMic = ref(false)
+type MicState = 'off' | 'asking' | 'granted' | 'denied'
+const micState = ref<MicState>('off')
+let micStream: MediaStream | null = null
+
+function releaseMic() {
+  micStream?.getTracks().forEach((t) => t.stop())
+  micStream = null
+}
+
+// Ask for the microphone right when the tester opts in, before the game and the share dialog.
+watch(withMic, async (on) => {
+  if (!on) {
+    releaseMic()
+    micState.value = 'off'
+    return
+  }
+  micState.value = 'asking'
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+    if (!withMic.value) releaseMic()
+    else micState.value = 'granted'
+  } catch {
+    micState.value = 'denied'
+  }
+})
 const gameOpened = ref(false)
+/** Steam games run outside the browser: open the store/launch page and record the game window instead of a tab. */
+const isDesktopGame = computed(() => campaign.value?.game.host === 'steam')
+const stepKey = (k: string) => (isDesktopGame.value ? `play.steam.${k}` : `play.${k}`)
 
 let recorder: TabRecorder | null = null
 const elapsed = ref(0)
@@ -45,6 +73,18 @@ const upload = ref({ parts: 0, uploading: false, retrying: false })
 const parts = ref<UploadedPart[]>([])
 const uploadError = ref('')
 const blocker = useBlockerCheck()
+const received = ref<{ known: boolean; parts: number; bytes: number } | null>(null)
+
+async function checkReceived() {
+  received.value = await api<{ known: boolean; parts: number; bytes: number }>(`/playtests/${id}/recording/status`).catch(() => null)
+}
+
+/** The video didn't reach us: record again instead of answering for nothing. */
+async function retryRecording() {
+  received.value = null
+  parts.value = []
+  phase.value = 'briefing'
+}
 const recorderMs = ref(0)
 
 const notes = ref<Note[]>([])
@@ -103,6 +143,7 @@ onMounted(async () => {
       // The recording was already stopped and uploaded before the reload: continue with the questionnaire.
       elapsed.value = recorderMs.value
       phase.value = 'questionnaire'
+      void checkReceived()
     } else if (s === 'paid' || s === 'no_payout') {
       draft.discard()
       result.value = { reason: r.playtest.payoutReason ?? 'paid', credits: r.playtest.creditsAwarded }
@@ -129,7 +170,9 @@ async function startRecording() {
   error.value = ''
   notice.value = ''
   recorder = new TabRecorder({
-    withMic: withMic.value,
+    withMic: false,
+    surface: isDesktopGame.value ? 'window' : 'browser',
+    micStream,
     partUrl: async (partNumber) => (await api<{ url: string }>(`/playtests/${id}/recording/part`, { method: 'POST', json: { partNumber } })).url,
     onProgress: (s) => (upload.value = s),
     onShareEnded: () => {
@@ -144,6 +187,14 @@ async function startRecording() {
     await recorder.start()
   } catch (e) {
     recorder = null
+    // The share dialog's failure stopped the mic tracks too; ask again silently (already granted).
+    if (withMic.value && micStream && micStream.getAudioTracks().every((t) => t.readyState === 'ended')) {
+      micStream = null
+      navigator.mediaDevices
+        .getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+        .then((s) => (micStream = s))
+        .catch(() => (micState.value = 'denied'))
+    }
     error.value = e instanceof WrongSurfaceError ? t('play.wrongSurface') : t('play.permissionDenied')
     return
   }
@@ -196,6 +247,7 @@ async function finishRecording() {
   elapsed.value = recorderMs.value
   await api(`/playtests/${id}/recording/stop`, { method: 'POST', json: { recorderMs: recorderMs.value } }).catch(() => {})
   parts.value = await recorder.stop()
+  await checkReceived()
   uploadError.value = [recorder.lastUploadError, blocker.blocked.value ? 'blocker detected' : ''].filter(Boolean).join(' · ')
   phase.value = 'questionnaire'
 }
@@ -246,7 +298,10 @@ useEventListener(window, 'beforeunload', (e: BeforeUnloadEvent) => {
     e.returnValue = t('play.leaveWarning')
   }
 })
-onBeforeUnmount(() => void recorder?.stop())
+onBeforeUnmount(() => {
+  void recorder?.stop()
+  if (!recorder) releaseMic()
+})
 </script>
 
 <template>
@@ -301,10 +356,13 @@ onBeforeUnmount(() => void recorder?.stop())
             <span>{{ $t('play.consent') }}</span>
           </label>
           <label class="flex items-start gap-3">
-            <input v-model="withMic" type="checkbox" class="mt-1 size-5 accent-[var(--c-primary-ink)]" />
+            <input v-model="withMic" type="checkbox" class="mt-1 size-5 accent-[var(--c-primary-ink)]" data-testid="mic" />
             <span>
               <span class="font-semibold">🎙 {{ $t('play.micLabel') }}</span>
               <span class="block text-sm text-muted">{{ $t('play.micHint') }}</span>
+              <span v-if="micState !== 'off'" class="mt-1 block text-sm font-semibold" :class="micState === 'granted' ? 'text-primary-ink' : micState === 'denied' ? 'text-warn-ink' : 'text-muted'" data-testid="mic-state" role="status">
+                {{ $t(`play.mic.${micState}`) }}
+              </span>
             </span>
           </label>
         </section>
@@ -312,18 +370,18 @@ onBeforeUnmount(() => void recorder?.stop())
         <div class="grid gap-4 md:grid-cols-2">
           <section class="card space-y-3 p-6" :class="gameOpened && 'border-primary-ink'">
             <h2 class="h3">1 · {{ $t('play.step1') }}</h2>
-            <p class="text-muted">{{ $t('play.step1Body') }}</p>
-            <button type="button" class="btn btn-secondary w-full" :disabled="!consent" data-testid="open-game" @click="openGame">
-              ↗ {{ gameOpened ? $t('play.gameOpened') : $t('play.openGame') }}
+            <p class="text-muted">{{ $t(stepKey('step1Body')) }}</p>
+            <button type="button" class="btn btn-secondary w-full" :disabled="!consent || micState === 'asking'" data-testid="open-game" @click="openGame">
+              ↗ {{ gameOpened ? $t(stepKey('gameOpened')) : $t(stepKey('openGame')) }}
             </button>
           </section>
           <section class="card space-y-3 p-6">
             <h2 class="h3">2 · {{ $t('play.step2') }}</h2>
-            <p class="text-muted">{{ $t('play.step2Body') }}</p>
+            <p class="text-muted">{{ $t(stepKey('step2Body')) }}</p>
             <button
               type="button"
               class="btn btn-primary w-full"
-              :disabled="!consent || !gameOpened || !supported"
+              :disabled="!consent || !gameOpened || !supported || micState === 'asking'"
               data-testid="start-recording"
               @click="startRecording"
             >
@@ -395,6 +453,13 @@ onBeforeUnmount(() => void recorder?.stop())
           <h2 class="h2">{{ $t('play.questionnaireTitle') }}</h2>
           <p class="text-muted">{{ $t('play.questionnaireLead') }}</p>
           <p class="mt-1 font-semibold">{{ $t('play.elapsed') }}: {{ formatDuration(recorderMs) }}</p>
+          <p v-if="received?.known && received.bytes > 0" class="mt-2 font-semibold text-primary-ink" role="status" data-testid="video-received">
+            ✓ {{ $t('play.received.ok', { mb: (received.bytes / 1048576).toFixed(1) }) }}
+          </p>
+          <div v-else-if="received?.known" class="mt-2 space-y-2 rounded-xl border-2 border-danger-ink p-4" role="alert" data-testid="video-missing">
+            <p class="font-semibold text-danger-ink">{{ $t('play.received.missing') }}</p>
+            <button type="button" class="btn btn-primary" @click="retryRecording">{{ $t('play.received.retry') }}</button>
+          </div>
         </header>
         <p v-if="quitEarly" class="rounded-xl border-2 border-warn-ink p-3 font-semibold text-warn-ink">{{ $t('play.quitEarlyNotice') }}</p>
         <QuestionField v-for="(q, i) in shownQuestions" :key="q.id" v-model="answers[q.id]" :question="q" :required="isRequired(q)" :index="i" />

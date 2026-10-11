@@ -71,7 +71,8 @@ export class B2Driver implements StorageDriver {
       for (const m of xml.matchAll(/<Part>([\s\S]*?)<\/Part>/g)) {
         const n = /<PartNumber>(\d+)<\/PartNumber>/.exec(m[1])?.[1]
         const etag = /<ETag>([^<]+)<\/ETag>/.exec(m[1])?.[1]?.replace(/&quot;/g, '"')
-        if (n && etag) parts.push({ partNumber: Number(n), etag })
+        const size = Number(/<Size>(\d+)<\/Size>/.exec(m[1])?.[1] ?? 0)
+        if (n && etag) parts.push({ partNumber: Number(n), etag, size })
       }
       if (!/<IsTruncated>true<\/IsTruncated>/.test(xml)) break
       marker = /<NextPartNumberMarker>(\d+)</.exec(xml)?.[1] ?? marker
@@ -84,9 +85,17 @@ export class B2Driver implements StorageDriver {
   }
 
   async size(key: string) {
-    const res = await this.aws.fetch(this.url(key), { method: 'HEAD' })
-    if (!res.ok) return null
-    return Number(res.headers.get('content-length') ?? 0)
+    // A just-completed object can take a moment to show up, and HEAD lengths aren't reliable through every
+    // proxy, so ask for the first byte and read the total from Content-Range; retry briefly.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const res = await this.aws.fetch(this.url(key), { headers: { range: 'bytes=0-0' } })
+      const total = Number(/\/(\d+)$/.exec(res.headers.get('content-range') ?? '')?.[1] ?? (res.ok ? res.headers.get('content-length') : 0))
+      await res.body?.cancel()
+      if (res.ok && total > 0) return total
+      if (res.status !== 404 && !res.ok) console.error('[b2] size', key, res.status)
+      await new Promise((r) => setTimeout(r, 400 * (attempt + 1)))
+    }
+    return null
   }
 
   async delete(key: string) {

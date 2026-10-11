@@ -24,7 +24,7 @@ watch(layout, (v) => {
   }
 })
 
-const hosts: GameHost[] = ['itch', 'wavedash', 'crazygames', 'newgrounds', 'own', 'other']
+const hosts: GameHost[] = ['itch', 'steam', 'wavedash', 'crazygames', 'newgrounds', 'own', 'other']
 const filters = reactive({ q: '', sort: 'pay', preset: '', host: '', tag: '', minPrice: '' })
 const campaigns = ref<Card[]>([])
 const tags = ref<string[]>([])

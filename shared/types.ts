@@ -4,7 +4,7 @@ import type { DeviceTarget, PayoutReason, PlaytimePresetId } from './rules'
 export type Role = 'user' | 'admin'
 export type CampaignStatus = 'draft' | 'live' | 'paused' | 'completed' | 'cancelled'
 export type PlaytestStatus = 'reserved' | 'recording' | 'submitted' | 'paid' | 'no_payout' | 'expired'
-export type GameHost = 'itch' | 'wavedash' | 'crazygames' | 'newgrounds' | 'own' | 'other'
+export type GameHost = 'itch' | 'steam' | 'wavedash' | 'crazygames' | 'newgrounds' | 'own' | 'other'
 
 export interface Me {
   id: string

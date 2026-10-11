@@ -36,6 +36,13 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export interface RecorderOptions {
   withMic: boolean
+  /**
+   * Microphone stream acquired before the share dialog. Asking afterwards would pop a permission prompt
+   * in this tab while Chrome has already switched the tester to the game tab.
+   */
+  micStream?: MediaStream | null
+  /** 'browser' records a game tab; 'window' records a desktop game (e.g. Steam) window or screen. */
+  surface?: 'browser' | 'window'
   /** Returns a presigned URL for one multipart part. */
   partUrl: (partNumber: number) => Promise<string>
   onProgress?: (state: { parts: number; uploading: boolean; retrying: boolean }) => void
@@ -73,7 +80,7 @@ export class TabRecorder {
   async start(): Promise<void> {
     this.display = await navigator.mediaDevices.getDisplayMedia({
       video: {
-        displaySurface: 'browser',
+        displaySurface: this.opts.surface ?? 'browser',
         width: { max: RECORDING.maxWidth },
         height: { max: RECORDING.maxHeight },
         frameRate: { max: RECORDING.frameRate },
@@ -87,13 +94,15 @@ export class TabRecorder {
 
     const video = this.display.getVideoTracks()[0]
     const surface = (video.getSettings() as MediaTrackSettings & { displaySurface?: string }).displaySurface
-    if (surface && surface !== 'browser') {
+    if (surface && (this.opts.surface ?? 'browser') === 'browser' && surface !== 'browser') {
       this.release()
       throw new WrongSurfaceError()
     }
     video.addEventListener('ended', () => this.opts.onShareEnded?.())
 
-    if (this.opts.withMic) {
+    if (this.opts.micStream) {
+      this.mic = this.opts.micStream
+    } else if (this.opts.withMic) {
       try {
         this.mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
       } catch {

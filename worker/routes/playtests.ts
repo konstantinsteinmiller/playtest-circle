@@ -122,6 +122,15 @@ playtestRoutes.post('/:id/recording/start', async (c) => {
   return c.json({ ok: true })
 })
 
+/** What storage holds for the running recording, so the tester learns about a failed upload before the questionnaire. */
+playtestRoutes.get('/:id/recording/status', async (c) => {
+  const { p, isTester, st } = await load(c)
+  if (!isTester || p.status !== 'recording' || !p.upload_id || !p.recording_key) fail(409, 'not_recording')
+  const parts = await st.listParts(p.recording_key, p.upload_id).catch(() => null)
+  if (!parts) return c.json({ known: false, parts: 0, bytes: 0 })
+  return c.json({ known: true, parts: parts.length, bytes: parts.reduce((n, x) => n + (x.size ?? 0), 0) })
+})
+
 playtestRoutes.post('/:id/recording/part', async (c) => {
   const { p, isTester, st } = await load(c)
   if (!isTester || p.status !== 'recording' || !p.upload_id || !p.recording_key) fail(409, 'not_recording')
