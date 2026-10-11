@@ -497,14 +497,19 @@
     "trailerUrl": "Trailer link",
     "trailerHint": "YouTube or Vimeo — shown on the game page.",
     "hoverClip": "Hover clip",
-    "hoverClipHint": "Short muted MP4/WebM (≤ 30 s, ≤ 20 MB) that plays when testers hover your card.",
+    "hoverClipHint": "Short muted MP4 (≤ 30 s, ≤ 20 MB) that plays when testers hover your card.",
     "upload": "Upload",
     "uploading": "Uploading…",
     "replace": "Replace",
     "uploadFailed": "Upload failed. Please try again.",
     "save": "Save game",
     "created": "Game saved. Ready to launch a playtest?",
-    "reviewLead": "This is how your card looks in Browse."
+    "reviewLead": "This is how your card looks in Browse.",
+    "dropHere": "Drop file here or click to choose",
+    "dropHereMany": "Drop files here or click to choose",
+    "dropActive": "Release to upload",
+    "wrongType": "This file type isn't supported. Allowed: {types}.",
+    "tooLarge": "This file is too large."
   },
   "wizard": {
     "title": "Launch a playtest",

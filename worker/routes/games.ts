@@ -11,7 +11,7 @@ export const gameRoutes = new Hono<AppEnv>()
 
 const HOSTS: GameHost[] = ['itch', 'wavedash', 'crazygames', 'newgrounds', 'own', 'other']
 const IMAGE_TYPES = ['image/webp', 'image/png', 'image/jpeg']
-const CLIP_TYPES = ['video/mp4', 'video/webm']
+const CLIP_TYPES = ['video/mp4']
 
 /** A media key is only accepted if the caller uploaded it themselves. */
 function ownKey(userId: string, key: unknown): string | null {
