@@ -45,6 +45,8 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
 
   await tester.goto('/browse')
   await tester.getByRole('link', { name: 'Doom Duck' }).click()
+  await expect(tester).toHaveURL(/\/c\//)
+  const campaignUrl = tester.url()
   await tester.getByTestId('start-playtest').click()
   await expect(tester).toHaveURL(/\/play\//)
 
@@ -91,6 +93,10 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
   await tester.getByTestId('submit-feedback').click()
   await expect(tester.getByTestId('result')).toContainText('10 Credits were added')
   expect((await (await tester.request.get('/api/me')).json()).user.credits).toBe(20)
+  // Back on the campaign, the reward card is framed and says what was earned instead of the price.
+  await tester.goto(campaignUrl)
+  await expect(tester.getByTestId('earned')).toHaveText('✓ You earned 10 Credits already')
+  await expect(tester.getByTestId('reward-card').locator('.pill-credit')).toHaveCount(0)
 
   // ---------------------------------------------------------------- dev reviews
   await dev.goto(resultsUrl)

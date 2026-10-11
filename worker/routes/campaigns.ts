@@ -87,9 +87,9 @@ campaignRoutes.get('/:id', async (c) => {
   const u = requireUser(c)
   const r = await loadCampaign(c.env, c.req.param('id')!)
   if (!r || (r.hidden_at && r.owner_id !== u.id && u.role !== 'admin')) fail(404, 'not_found')
-  const mine = await c.env.DB.prepare('SELECT id, status FROM playtests WHERE campaign_id = ? AND tester_id = ?')
+  const mine = await c.env.DB.prepare('SELECT id, status, credits_awarded FROM playtests WHERE campaign_id = ? AND tester_id = ?')
     .bind(r.id, u.id)
-    .first<{ id: string; status: PlaytestStatus }>()
+    .first<{ id: string; status: PlaytestStatus; credits_awarded: number | null }>()
   return c.json({ campaign: mapCampaignDetail(r, mine) })
 })
 

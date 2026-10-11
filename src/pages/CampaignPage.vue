@@ -32,6 +32,7 @@ const directTrailer = computed(() => (c.value?.game.trailerUrl && !trailer.value
 const isOwn = computed(() => c.value?.owner.id === session.me?.id)
 const myRep = computed(() => (session.me ? reputationScore(session.me.repUp, session.me.repDown) : 0))
 const visibleQuestions = computed(() => c.value?.questions.filter((q) => q.source !== 'system' || q.id === 'sys_overall') ?? [])
+const earned = computed(() => (c.value?.myPlaytestStatus === 'paid' ? c.value.myCreditsAwarded : 0))
 const blocker = computed(() => {
   const x = c.value
   if (!x) return ''
@@ -122,8 +123,9 @@ async function start() {
     </div>
 
     <aside class="space-y-4 lg:sticky lg:top-24 lg:self-start">
-      <div class="card space-y-5 p-6">
-        <div>
+      <div class="card space-y-5 p-6" :class="{ 'border-2 border-primary': earned }" data-testid="reward-card">
+        <p v-if="earned" class="text-lg font-semibold text-primary-ink" data-testid="earned">✓ {{ $t('campaign.earned', { n: earned }, earned) }}</p>
+        <div v-else>
           <p class="text-sm font-semibold text-muted">{{ $t('campaign.reward') }}</p>
           <p class="pill-credit mt-1 text-2xl">◎ {{ $t('common.credits', c.price) }}</p>
         </div>

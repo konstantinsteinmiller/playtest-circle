@@ -208,7 +208,8 @@
     "slots": "{left} of {total} slots open",
     "minRep": "Minimum tester reputation: {n}%",
     "playLink": "Game link",
-    "beforeYouStart": "Before you start: the game opens in a new tab and you'll share that tab for recording. Desktop Chrome, Edge or Opera required."
+    "beforeYouStart": "Before you start: the game opens in a new tab and you'll share that tab for recording. Desktop Chrome, Edge or Opera required.",
+    "earned": "You earned {n} Credit already | You earned {n} Credits already"
   },
   "play": {
     "title": "Playtest",

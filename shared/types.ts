@@ -102,6 +102,8 @@ export interface CampaignDetail extends CampaignCard {
   escrow: number
   myPlaytestId: string | null
   myPlaytestStatus: PlaytestStatus | null
+  /** Credits the viewer was paid for their playtest of this campaign (0 until paid). */
+  myCreditsAwarded: number
 }
 
 export interface PlaytestRow {

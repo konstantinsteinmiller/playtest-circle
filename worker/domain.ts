@@ -154,7 +154,7 @@ export function mapCampaignCard(r: CampaignRow): CampaignCard {
 
 export function mapCampaignDetail(
   r: CampaignRow,
-  mine: { id: string; status: PlaytestStatus } | null,
+  mine: { id: string; status: PlaytestStatus; credits_awarded?: number | null } | null,
 ): CampaignDetail {
   const game = gameOf(r)
   return {
@@ -167,6 +167,7 @@ export function mapCampaignDetail(
     escrow: r.escrow,
     myPlaytestId: mine?.id ?? null,
     myPlaytestStatus: mine?.status ?? null,
+    myCreditsAwarded: mine?.credits_awarded ?? 0,
   }
 }
 
