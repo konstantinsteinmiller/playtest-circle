@@ -651,7 +651,12 @@
       "submit": "Claim {n} Credits",
       "used": "{used} of {max} claimed",
       "done": "Thanks for spreading the word! +{n} Credits.",
-      "maxed": "You've claimed all {max} posts. Thank you!"
+      "maxed": "You've claimed all {max} posts. Thank you!",
+      "templateLabel": "Post template — copy it or write your own",
+      "template": "Playtest Circle is a place for game devs looking for high-value feedback on their games. Screen recording and think-aloud mic are the icing on the cake of a fully customizable questionnaire. Everything is quid pro quo: no exploitation of players' or game devs' time. 🎮🔁\n\n{url}",
+      "copy": "Copy text",
+      "copied": "Copied!",
+      "shareOn": "Post on {network}"
     }
   },
   "settings": {

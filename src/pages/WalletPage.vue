@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { LedgerRow } from '@shared/types'
 import { api } from '@/lib/api'
@@ -36,6 +36,27 @@ const socialUrl = ref('')
 const socialBusy = ref(false)
 const socialMsg = ref('')
 const socialErr = ref('')
+const APP_LINK = 'https://app.playtest-circle.workers.dev/'
+const postText = computed(() => t('wallet.social.template', { url: APP_LINK }))
+const copied = ref(false)
+const shareLinks = computed(() => {
+  const text = encodeURIComponent(postText.value)
+  return [
+    { network: 'X', href: `https://x.com/intent/post?text=${text}` },
+    { network: 'Bluesky', href: `https://bsky.app/intent/compose?text=${text}` },
+    { network: 'Threads', href: `https://www.threads.net/intent/post?text=${text}` },
+    { network: 'LinkedIn', href: `https://www.linkedin.com/feed/?shareActive=true&text=${text}` },
+  ]
+})
+async function copyPost() {
+  try {
+    await navigator.clipboard.writeText(postText.value)
+    copied.value = true
+    setTimeout(() => (copied.value = false), 2000)
+  } catch {
+    /* clipboard blocked: the text stays selectable */
+  }
+}
 
 async function loadSocial() {
   social.value = await api<SocialState>('/me/social-claims')
@@ -99,6 +120,18 @@ function testStatus(x: MyTest) {
           ✓ <a :href="c.url" target="_blank" rel="noopener noreferrer" class="underline">{{ c.url }}</a> · +{{ c.credits }}
         </li>
       </ul>
+      <div v-if="social.claims.length < social.maxPerUser" class="space-y-2">
+        <label for="social-template" class="field-label">{{ $t('wallet.social.templateLabel') }}</label>
+        <textarea id="social-template" readonly class="input min-h-32" :value="postText" data-testid="social-template" @focus="($event.target as HTMLTextAreaElement).select()" />
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="btn btn-secondary min-h-9 py-1" data-testid="social-copy" @click="copyPost">
+            {{ copied ? $t('wallet.social.copied') : $t('wallet.social.copy') }}
+          </button>
+          <a v-for="s in shareLinks" :key="s.network" :href="s.href" target="_blank" rel="noopener noreferrer" class="btn btn-ghost min-h-9 py-1">
+            {{ $t('wallet.social.shareOn', { network: s.network }) }}
+          </a>
+        </div>
+      </div>
       <form v-if="social.claims.length < social.maxPerUser" class="flex flex-wrap items-end gap-3" @submit.prevent="claimSocial">
         <label class="block min-w-0 flex-1">
           <span class="field-label">{{ $t('wallet.social.label') }}</span>
