@@ -5,7 +5,7 @@ import { deleteRecording, type PlaytestDbRow } from '../domain'
 import type { AppEnv } from '../env'
 import { tr } from '../i18n'
 import { fail, newId, now, parseJson } from '../lib'
-import { normalizeSocialUrl, SOCIAL_CLAIM } from '../../shared/rules'
+import { CHEAT, normalizeSocialUrl, SOCIAL_CLAIM } from '../../shared/rules'
 import { storage } from '../storage'
 
 export const meRoutes = new Hono<AppEnv>()
@@ -24,6 +24,7 @@ export async function ownerRecordingBytes(db: D1Database, ownerId: string): Prom
 meRoutes.get('/me', async (c) => {
   const s = c.get('user')
   if (!s) return c.json({ user: null })
+  if (now() >= CHEAT.until) await clawBackCheats(c.env.DB, s.id)
   const u = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(s.id).first<Record<string, unknown>>()
   if (!u) return c.json({ user: null })
   const me: Me = {
@@ -39,13 +40,14 @@ meRoutes.get('/me', async (c) => {
     emailOptIn: !!u.email_opt_in,
     onboarded: !!u.onboarded_at,
     recordingBytes: await ownerRecordingBytes(c.env.DB, s.id),
+    cheatRemoved: (u.cheat_notice as number) ?? 0,
   }
   return c.json({ user: me, banned: s.banned })
 })
 
 meRoutes.patch('/me', async (c) => {
   const u = requireUser(c)
-  const body = (await c.req.json()) as { discordWebhook?: string | null; emailOptIn?: boolean; onboarded?: boolean }
+  const body = (await c.req.json()) as { discordWebhook?: string | null; emailOptIn?: boolean; onboarded?: boolean; ackCheatNotice?: boolean }
   if (body.discordWebhook !== undefined) {
     const v = body.discordWebhook?.trim() || null
     if (v && !/^https:\/\/(discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+$/.test(v)) fail(422, 'invalid_webhook')
@@ -53,6 +55,9 @@ meRoutes.patch('/me', async (c) => {
   }
   if (body.emailOptIn !== undefined) {
     await c.env.DB.prepare('UPDATE users SET email_opt_in = ? WHERE id = ?').bind(body.emailOptIn ? 1 : 0, u.id).run()
+  }
+  if (body.ackCheatNotice) {
+    await c.env.DB.prepare('UPDATE users SET cheat_notice = NULL WHERE id = ?').bind(u.id).run()
   }
   if (body.onboarded) {
     await c.env.DB.prepare('UPDATE users SET onboarded_at = COALESCE(onboarded_at, ?) WHERE id = ?').bind(now(), u.id).run()
@@ -86,6 +91,39 @@ meRoutes.get('/me/ledger', async (c) => {
     createdAt: r.created_at,
   }))
   return c.json({ rows })
+})
+
+/**
+ * After the testing period, removes whatever cheat Credits are still outstanding, as far as the balance allows
+ * (Credits already locked in campaign escrow stay there). Repeats on later visits until the debt is cleared.
+ */
+export async function clawBackCheats(db: D1Database, userId: string) {
+  const r = await db
+    .prepare(
+      `SELECT COALESCE(SUM(l.delta), 0) AS owed, u.credits FROM users u LEFT JOIN credit_ledger l
+         ON l.user_id = u.id AND l.reason IN ('cheat', 'cheat_removed') WHERE u.id = ? GROUP BY u.id`,
+    )
+    .bind(userId)
+    .first<{ owed: number; credits: number }>()
+  const take = Math.min(r?.owed ?? 0, r?.credits ?? 0)
+  if (take <= 0) return
+  await db.batch([
+    db.prepare('UPDATE users SET credits = credits - ?, cheat_notice = COALESCE(cheat_notice, 0) + ? WHERE id = ?').bind(take, take, userId),
+    db
+      .prepare("INSERT INTO credit_ledger (id, user_id, delta, reason, ref_type, ref_id, created_at) VALUES (?, ?, ?, 'cheat_removed', NULL, NULL, ?)")
+      .bind(newId(), userId, -take, now()),
+  ])
+}
+
+meRoutes.post('/me/cheat', async (c) => {
+  const u = requireUser(c)
+  if (now() >= CHEAT.until) fail(409, 'cheat_ended')
+  await c.env.DB.batch([
+    c.env.DB.prepare('UPDATE users SET credits = credits + ? WHERE id = ?').bind(CHEAT.credits, u.id),
+    c.env.DB.prepare("INSERT INTO credit_ledger (id, user_id, delta, reason, ref_type, ref_id, created_at) VALUES (?, ?, ?, 'cheat', NULL, NULL, ?)")
+      .bind(newId(), u.id, CHEAT.credits, now()),
+  ])
+  return c.json({ ok: true, credits: CHEAT.credits })
 })
 
 meRoutes.get('/me/social-claims', async (c) => {

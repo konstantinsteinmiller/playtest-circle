@@ -19,6 +19,8 @@ export interface Me {
   emailOptIn: boolean
   onboarded: boolean
   recordingBytes: number
+  /** Cheat Credits removed after the testing period, not yet acknowledged. */
+  cheatRemoved: number
 }
 
 export interface PublicUser {

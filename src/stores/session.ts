@@ -7,6 +7,7 @@ interface Config {
   githubUrl: string
   devLogin: boolean
   googleConfigured: boolean
+  storageOrigin?: string | null
 }
 
 export const useSession = defineStore('session', () => {

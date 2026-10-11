@@ -7,7 +7,7 @@ import type { AppEnv, Env } from './env'
 import { adminRoutes } from './routes/admin'
 import { campaignRoutes } from './routes/campaigns'
 import { gameRoutes } from './routes/games'
-import { meRoutes } from './routes/me'
+import { clawBackCheats, meRoutes } from './routes/me'
 import { playtestRoutes } from './routes/playtests'
 import { storageRoutes } from './routes/storage'
 
@@ -27,6 +27,8 @@ app.get('/config', (c) =>
     githubUrl: c.env.GITHUB_URL,
     devLogin: c.env.DEV_LOGIN === '1',
     googleConfigured: !!c.env.GOOGLE_CLIENT_ID,
+    // Where recordings upload to, so the client can check that a blocker doesn't stop it.
+    storageOrigin: c.env.STORAGE_DRIVER === 'b2' ? new URL(c.env.B2_ENDPOINT).origin : null,
   }),
 )
 
@@ -37,6 +39,13 @@ app.route('/games', gameRoutes)
 app.route('/campaigns', campaignRoutes)
 app.route('/playtests', playtestRoutes)
 app.route('/admin', adminRoutes)
+
+/** e2e only (DEV_LOGIN=1): run the after-testing-period cheat clawback for the signed-in user now. */
+app.post('/dev/clawback', async (c) => {
+  if (c.env.DEV_LOGIN !== '1' || !c.get('user')) return c.json({ error: 'not_found' }, 404)
+  await clawBackCheats(c.env.DB, c.get('user')!.id)
+  return c.json({ ok: true })
+})
 
 /** e2e only (DEV_LOGIN=1): time out one playtest's reservation and run the hourly job now. */
 app.post('/dev/expire-and-cron', async (c) => {

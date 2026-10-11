@@ -182,12 +182,17 @@ export function contiguousParts<T extends { partNumber: number }>(parts: T[]): T
   return out
 }
 
+/** End of 20 Oct 2026, Berlin time (CEST, UTC+2): testing-period promos stop here. */
+export const TESTING_PERIOD_END = Date.UTC(2026, 9, 20, 22, 0, 0)
+
+/** Testing-period cheat (?cheat=true, then Ctrl+Shift+K). Its Credits are clawed back after the period. */
+export const CHEAT = { credits: 10, until: TESTING_PERIOD_END }
+
 /** Testing-period promo: Credits for a social media post about the platform. */
 export const SOCIAL_CLAIM = {
   credits: 20,
   maxPerUser: 3,
-  /** End of 20 Oct 2026, Berlin time (CEST, UTC+2). */
-  until: Date.UTC(2026, 9, 20, 22, 0, 0),
+  until: TESTING_PERIOD_END,
 }
 
 const SOCIAL_HOSTS = [

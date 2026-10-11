@@ -8,6 +8,7 @@ import type { PayoutReason } from '@shared/rules'
 import type { Note, PlaytestDetail } from '@shared/types'
 import QuestionField from '@/components/QuestionField.vue'
 import { useErrorText } from '@/composables/useErrorText'
+import { useBlockerCheck } from '@/composables/useBlockerCheck'
 import { useDraft } from '@/composables/useDraft'
 import { useQuestionText } from '@/composables/useQuestionText'
 import { api } from '@/lib/api'
@@ -43,6 +44,7 @@ const hasMic = ref(false)
 const upload = ref({ parts: 0, uploading: false, retrying: false })
 const parts = ref<UploadedPart[]>([])
 const uploadError = ref('')
+const blocker = useBlockerCheck()
 const recorderMs = ref(0)
 
 const notes = ref<Note[]>([])
@@ -88,6 +90,7 @@ const draft = useDraft<{ answers: Record<string, AnswerInput>; noteText: string;
 )
 
 onMounted(async () => {
+  void blocker.check()
   try {
     const r = await api<{ playtest: PlaytestDetail; minuteMs: number }>(`/playtests/${id}`)
     pt.value = r.playtest
@@ -193,7 +196,7 @@ async function finishRecording() {
   elapsed.value = recorderMs.value
   await api(`/playtests/${id}/recording/stop`, { method: 'POST', json: { recorderMs: recorderMs.value } }).catch(() => {})
   parts.value = await recorder.stop()
-  uploadError.value = recorder.lastUploadError
+  uploadError.value = [recorder.lastUploadError, blocker.blocked.value ? 'blocker detected' : ''].filter(Boolean).join(' · ')
   phase.value = 'questionnaire'
 }
 
@@ -269,6 +272,11 @@ onBeforeUnmount(() => void recorder?.stop())
       <!-- Briefing -->
       <template v-if="phase === 'briefing'">
         <p v-if="!supported" class="card border-danger p-5 font-semibold text-danger-ink" role="alert">{{ $t('play.unsupported') }}</p>
+        <section v-if="blocker.blocked.value" class="card space-y-2 border-warn-ink p-5" role="alert" data-testid="blocker-warning">
+          <h2 class="font-display text-lg font-bold text-warn-ink">⚠ {{ $t('play.blocker.title') }}</h2>
+          <p>{{ $t('play.blocker.body') }}</p>
+          <button type="button" class="btn btn-secondary min-h-9 py-1" :disabled="blocker.checking.value" @click="blocker.check()">{{ $t('play.blocker.recheck') }}</button>
+        </section>
 
         <section class="card space-y-4 p-6">
           <h2 class="h2">{{ $t('play.briefingTitle') }}</h2>

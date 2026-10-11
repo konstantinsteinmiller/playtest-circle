@@ -263,7 +263,13 @@
     "micLevel": "Microphone level",
     "shareEnded": "Sharing ended — you can now give your feedback.",
     "leaveWarning": "Your playtest is still recording. Leave anyway?",
-    "resultInterrupted": "The recording was interrupted. The dev can still watch what arrived, but no Credits were paid."
+    "resultInterrupted": "The recording was interrupted. The dev can still watch what arrived, but no Credits were paid.",
+    "blocker": {
+      "title": "An ad or tracker blocker seems to be active",
+      "body": "Blockers can stop the screen recording from uploading, and then the playtest can't pay out. Please allow this site in your blocker (or pause it) and reload the page before you start.",
+      "recheck": "Check again",
+      "ok": "No blocker detected."
+    }
   },
   "question": {
     "comment": "Comment",
@@ -638,7 +644,9 @@
       "playtest_reward": "Playtest reward",
       "tidy_bonus": "Tidy bonus",
       "admin_grant": "Granted by admin",
-      "social_post": "Social media post"
+      "social_post": "Social media post",
+      "cheat": "Cheat (testing period)",
+      "cheat_removed": "Cheat Credits removed"
     },
     "myTests": "My playtests",
     "noTests": "You haven't tested any games yet.",
@@ -817,5 +825,11 @@
       "desktop": "🖥 Desktop",
       "desktop_mobile": "🖥 + 📱 Mobile"
     }
+  },
+  "cheat": {
+    "granted": "Cheat: +{n} Credits (testing period only — removed after {date}).",
+    "removed": "The testing period is over: {n} cheated Credits were removed from your balance.",
+    "ended": "The cheat ended with the testing period.",
+    "dismiss": "Dismiss"
   }
 }
