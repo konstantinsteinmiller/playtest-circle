@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import OnboardingVideo from '@/components/OnboardingVideo.vue'
 import GoogleIcon from '@/components/GoogleIcon.vue'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -73,6 +74,7 @@ const steps = [
 
     <section class="space-y-6">
       <h2 class="h2">{{ $t('landing.stepsTitle') }}</h2>
+      <OnboardingVideo class="mx-auto max-w-3xl" />
       <div class="grid gap-4 md:grid-cols-3">
         <div v-for="s in steps" :key="s.n" class="card p-6">
           <span class="grid size-12 place-items-center rounded-2xl bg-primary font-display text-2xl font-bold text-on-primary" aria-hidden="true">{{

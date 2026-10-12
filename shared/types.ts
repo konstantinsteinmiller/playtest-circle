@@ -13,6 +13,8 @@ export interface Me {
   avatarUrl: string | null
   role: Role
   credits: number
+  /** Credits held in escrow for this user's live and paused campaigns (paid out per finished test). */
+  reserved: number
   repUp: number
   repDown: number
   discordWebhook: string | null

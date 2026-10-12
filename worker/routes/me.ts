@@ -34,6 +34,12 @@ meRoutes.get('/me', async (c) => {
     avatarUrl: (u.avatar_url as string) ?? null,
     role: u.role as Me['role'],
     credits: u.credits as number,
+    reserved:
+      (
+        await c.env.DB.prepare('SELECT COALESCE(SUM(escrow), 0) AS n FROM campaigns WHERE owner_id = ?')
+          .bind(s.id)
+          .first<{ n: number }>()
+      )?.n ?? 0,
     repUp: u.rep_up as number,
     repDown: u.rep_down as number,
     discordWebhook: (u.discord_webhook as string) ?? null,

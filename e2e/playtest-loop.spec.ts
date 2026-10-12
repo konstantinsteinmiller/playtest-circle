@@ -36,6 +36,10 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
   await expect(dev).toHaveURL(/\/studio\/campaigns\/\w+\?published=1/)
   const resultsUrl = dev.url().split('?')[0]
   expect((await (await dev.request.get('/api/me')).json()).user.credits).toBe(0)
+  // The 10 Credits sit in the campaign, and the wallet says so next to the balance.
+  expect((await (await dev.request.get('/api/me')).json()).user.reserved).toBe(10)
+  await dev.goto('/wallet')
+  await expect(dev.getByTestId('reserved')).toContainText('10 reserved')
 
   // ---------------------------------------------------------------- tester plays
   const testerCtx = await browser.newContext()

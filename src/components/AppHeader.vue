@@ -52,8 +52,11 @@ const links = [
       <div class="ml-auto flex items-center gap-2">
         <div class="hidden sm:block"><ThemeToggle /></div>
         <template v-if="session.me">
-          <RouterLink to="/wallet" class="pill-credit" :aria-label="$t('nav.balance', { n: session.me.credits })">
+          <RouterLink to="/wallet" class="pill-credit" :aria-label="session.me.reserved ? $t('nav.balanceReserved', { n: session.me.credits, r: session.me.reserved }) : $t('nav.balance', { n: session.me.credits })">
             <span aria-hidden="true">◎</span>{{ session.me.credits }}
+            <span v-if="session.me.reserved" class="hidden text-xs font-semibold opacity-80 md:inline" data-testid="reserved-pill">
+              {{ $t('nav.reservedShort', { n: session.me.reserved }) }}
+            </span>
           </RouterLink>
           <NotificationBell />
           <div ref="account" class="relative">

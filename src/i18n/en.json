@@ -54,7 +54,9 @@
     "menu": "Open menu",
     "account": "Account menu",
     "skipToContent": "Skip to content",
-    "balance": "Credit balance: {n}"
+    "balance": "Credit balance: {n}",
+    "reservedShort": "+{n} reserved",
+    "balanceReserved": "Credit balance: {n}, plus {r} reserved in your campaigns"
   },
   "theme": {
     "label": "Color scheme",
@@ -684,7 +686,9 @@
       "copy": "Copy text",
       "copied": "Copied!",
       "shareOn": "Post on {network}"
-    }
+    },
+    "reserved": "+ ◎ {n} reserved in your campaigns",
+    "reservedHint": "Paid upfront when you published. Each finished test is paid from it; unused Credits come back when the campaign ends."
   },
   "settings": {
     "title": "Settings",
@@ -883,5 +887,22 @@
     "title": "Warning from the Playtest Circle team",
     "lead": "Please read this. Repeated misuse can get your account banned.",
     "ack": "I understand"
+  },
+  "video": {
+    "title": "Playtest Circle in 30 seconds",
+    "play": "Play",
+    "pause": "Pause",
+    "replay": "Replay",
+    "scene": "Scene {n}: {title}",
+    "s1Title": "Test games, earn Credits",
+    "s1Body": "Pick a game, share its tab, play and answer the questions.",
+    "s2Title": "Add your game",
+    "s2Body": "Title, play link, cover and screenshots: about 5 minutes.",
+    "s3Title": "Launch a campaign",
+    "s3Body": "Choose questions, playtime and pay. Credits are held until tests finish.",
+    "s4Title": "Watch and learn",
+    "s4Body": "See every session, jump to marked moments, rate the tester.",
+    "s5Title": "Everyone gets better games",
+    "s5Body": "Dev-to-dev feedback, in a circle."
   }
 }

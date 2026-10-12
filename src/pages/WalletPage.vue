@@ -107,6 +107,10 @@ function testStatus(x: MyTest) {
       <div class="card p-5 text-right">
         <p class="text-sm font-semibold text-muted">{{ $t('wallet.balance') }}</p>
         <p class="font-display text-4xl font-bold text-primary-ink" data-testid="balance">◎ {{ session.me?.credits ?? 0 }}</p>
+        <p v-if="session.me?.reserved" class="mt-1 text-sm font-semibold text-info-ink" data-testid="reserved">
+          {{ $t('wallet.reserved', { n: session.me.reserved }) }}
+        </p>
+        <p v-if="session.me?.reserved" class="max-w-64 text-xs text-muted">{{ $t('wallet.reservedHint') }}</p>
       </div>
     </header>
     <p class="text-sm text-muted">{{ $t('wallet.roadmapNote') }}</p>
