@@ -106,6 +106,7 @@
     "gated": "No sign-up needed: try everything as a guest, posting your own game included. Sign in with Google any time to keep your account for good.",
     "banned": "This account has been banned for misusing the platform.",
     "ctaGuest": "Try as guest",
+    "guestError": "Couldn't start a guest account: {reason} Please try again in a moment.",
     "ctaLinkGuest": "Sign in with Google to keep your guest account"
   },
   "tutorial": {

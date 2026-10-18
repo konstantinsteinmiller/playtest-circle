@@ -7,6 +7,7 @@ import { WELCOME_GRANT } from '@shared/rules'
 import AppLogo from '@/components/AppLogo.vue'
 import { api } from '@/lib/api'
 import { useSession } from '@/stores/session'
+import { useErrorText } from '@/composables/useErrorText'
 
 const session = useSession()
 const route = useRoute()
@@ -15,13 +16,18 @@ const returnTo = computed(() => (typeof route.query.returnTo === 'string' ? rout
 const loginError = computed(() => (typeof route.query.login_error === 'string' ? route.query.login_error : ''))
 const devEmail = ref('dev@example.com')
 
+const errorText = useErrorText()
 const guestBusy = ref(false)
+const guestError = ref('')
 /** Starts a guest account in this browser, no sign-in needed. */
 async function tryAsGuest() {
   guestBusy.value = true
+  guestError.value = ''
   try {
     await session.ensureGuest()
     router.push(returnTo.value)
+  } catch (e) {
+    guestError.value = errorText(e)
   } finally {
     guestBusy.value = false
   }
@@ -65,6 +71,9 @@ const steps = [
           </template>
           <RouterLink to="/how-it-works" class="btn btn-secondary text-lg">{{ $t('landing.secondary') }}</RouterLink>
         </div>
+        <p v-if="guestError" class="rounded-xl border-2 border-danger p-3 font-semibold text-danger-ink" role="alert" data-testid="guest-error">
+          {{ $t('landing.guestError', { reason: guestError }) }}
+        </p>
         <form v-if="session.config.devLogin && !session.member" class="flex flex-wrap items-end gap-2" @submit.prevent="devLogin">
           <label class="min-w-64">
             <span class="field-label text-sm">{{ $t('landing.devLoginEmail') }}</span>

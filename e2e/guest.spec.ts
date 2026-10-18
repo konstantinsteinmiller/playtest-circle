@@ -133,3 +133,11 @@ test('"Try as guest" on the landing starts a guest who may open the studio', asy
   await page.goto('/studio')
   await expect(page.getByTestId('studio-guest-warning')).toBeVisible()
 })
+
+test('"Try as guest" says so when the guest account cannot be started', async ({ page }) => {
+  await page.route('**/api/auth/guest', (r) => r.fulfill({ status: 500, json: { error: 'internal' } }))
+  await page.goto('/')
+  await page.getByTestId('try-guest').click()
+  await expect(page.getByTestId('guest-error')).toBeVisible()
+  await expect(page).toHaveURL(/\/$/)
+})
