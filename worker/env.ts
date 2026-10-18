@@ -34,6 +34,8 @@ export interface SessionUser {
   role: 'user' | 'admin'
   credits: number
   banned: boolean
+  /** Signed in without Google: may test and comment, not post games. */
+  guest: boolean
 }
 
 export type AppEnv = { Bindings: Env; Variables: { user: SessionUser | null } }

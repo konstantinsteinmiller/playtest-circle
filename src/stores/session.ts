@@ -34,9 +34,28 @@ export const useSession = defineStore('session', () => {
     me.value = null
   }
 
+  /** Testing and commenting need an account: without one, quietly start a guest account in this browser. */
+  async function ensureGuest() {
+    if (me.value) return
+    await api('/auth/guest', { method: 'POST' })
+    await refresh()
+  }
+
   function loginUrl(returnTo = '/browse') {
     return `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`
   }
 
-  return { me, config, loaded, signedIn: computed(() => !!me.value), refresh, ensureLoaded, logout, loginUrl }
+  return {
+    me,
+    config,
+    loaded,
+    signedIn: computed(() => !!me.value),
+    /** Signed in with Google (not a guest): may post games and campaigns. */
+    member: computed(() => !!me.value && !me.value.guest),
+    refresh,
+    ensureLoaded,
+    ensureGuest,
+    logout,
+    loginUrl,
+  }
 })

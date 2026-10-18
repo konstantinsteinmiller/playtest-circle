@@ -3,7 +3,13 @@ import { computed } from 'vue'
 import type { AnswerInput, CampaignQuestion } from '@shared/questions'
 import { useQuestionText } from '@/composables/useQuestionText'
 
-const props = defineProps<{ question: CampaignQuestion; required: boolean; index: number }>()
+const props = defineProps<{
+  question: CampaignQuestion
+  required: boolean
+  index: number
+  /** Shows a live character counter towards this many characters. */
+  minChars?: number
+}>()
 const model = defineModel<AnswerInput>({ required: true })
 const qt = useQuestionText()
 
@@ -14,6 +20,7 @@ const options = computed(() => {
   return [1, 2, 3, 4, 5]
 })
 const groupId = computed(() => `q-${props.question.id}`)
+const chars = computed(() => model.value.text.trim().length)
 
 function pick(v: number) {
   model.value = { ...model.value, value: v, na: false }
@@ -74,6 +81,15 @@ function pickNa() {
             @input="model = { ...model, text: ($event.target as HTMLTextAreaElement).value }"
           />
         </label>
+        <p
+          v-if="minChars"
+          class="mt-1 text-sm font-semibold tabular-nums"
+          :class="chars >= minChars ? 'text-primary-ink' : 'text-warn-ink'"
+          aria-live="polite"
+          :data-testid="`chars-${question.id}`"
+        >
+          {{ chars >= minChars ? '✓ ' : '' }}{{ $t('question.charCount', { n: chars, min: minChars }) }}
+        </p>
       </div>
     </div>
   </fieldset>

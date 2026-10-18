@@ -215,6 +215,7 @@ playtestRoutes.post('/:id/submit', async (c) => {
     uploadComplete,
     requiredCount: counts.required,
     requiredAnswered: counts.requiredAnswered,
+    quitReasonChars: answers.find((a) => a.questionId === 'sys_quit_reason')?.text.trim().length ?? 0,
     minuteMs: mm,
   })
   const paid = reason === 'paid'

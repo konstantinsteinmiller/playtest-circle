@@ -8,6 +8,8 @@ import { priceAdvice, contiguousParts, normalizeSocialUrl,
   canClaimTidyBonus,
   escrowFor,
   evaluatePayout,
+  inQuitGrace,
+  QUIT_REASON_MIN_CHARS,
   pickEvictions,
   reputationScore,
   reservationMs,
@@ -69,6 +71,20 @@ describe('evaluatePayout', () => {
     // e2e: "3 minutes" of 1 s each; 4 s of real recording at ~8 MB/min.
     const r = evaluatePayout(input({ minuteMs: 1000, activeMs: 4000, recorderMs: 4000, recordingBytes: (bytesPerMin / 60) * 4 }))
     expect(r).toBe('paid')
+  })
+
+  it('excuses up to one minute short when the quit reason has 60+ characters', () => {
+    const reason = 'x'.repeat(QUIT_REASON_MIN_CHARS)
+    expect(evaluatePayout(input({ activeMs: 2 * MIN, recorderMs: 2 * MIN, quitReasonChars: reason.length }))).toBe('paid')
+    expect(evaluatePayout(input({ activeMs: 2.5 * MIN, recorderMs: 2.5 * MIN, quitReasonChars: 59 }))).toBe('quit_early')
+    // More than a minute short stays unpaid, however long the explanation.
+    expect(evaluatePayout(input({ activeMs: 1.9 * MIN, recorderMs: 1.9 * MIN, quitReasonChars: 500 }))).toBe('quit_early')
+  })
+
+  it('scales the grace window with a shortened test minute', () => {
+    expect(inQuitGrace(2000, 3, 1000)).toBe(true)
+    expect(inQuitGrace(1999, 3, 1000)).toBe(false)
+    expect(inQuitGrace(3000, 3, 1000)).toBe(false)
   })
 })
 

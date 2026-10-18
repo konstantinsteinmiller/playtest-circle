@@ -18,6 +18,9 @@ export const MAX_SCREENSHOTS = 8
 export const MAX_IMAGE_BYTES = 2 * 1024 ** 2
 export const MAX_HOVER_CLIP_BYTES = 20 * 1024 ** 2
 export const MAX_NOTE_LENGTH = 500
+export const MAX_COMMENT_LENGTH = 1000
+/** Comments one account may post per window, so a guest can't flood a game page. */
+export const COMMENT_RATE = { max: 5, windowMs: 10 * 60 * 1000 }
 export const MAX_ANSWER_TEXT = 4000
 
 /** Multipart part size. S3/B2 require >= 5 MB for every part but the last. */
@@ -82,6 +85,16 @@ export function validateSlots(slots: number): boolean {
   return Number.isInteger(slots) && slots >= SLOTS_MIN && slots <= SLOTS_MAX
 }
 
+/** A tester may stop up to this many minutes before the minimum and still earn, if they explain why. */
+export const QUIT_GRACE_MINUTES = 1
+/** Characters the early-quit explanation needs to unlock the grace window. */
+export const QUIT_REASON_MIN_CHARS = 60
+
+/** Stopped short of the minimum, but inside the grace window that a long enough quit reason can unlock. */
+export function inQuitGrace(playedMs: number, minMinutes: number, minuteMs = 60_000): boolean {
+  return playedMs < minMinutes * minuteMs && playedMs >= (minMinutes - QUIT_GRACE_MINUTES) * minuteMs
+}
+
 export type PayoutReason = 'paid' | 'quit_early' | 'incomplete' | 'no_recording' | 'implausible_recording' | 'interrupted'
 
 export interface PayoutInput {
@@ -94,6 +107,8 @@ export interface PayoutInput {
   uploadComplete: boolean
   requiredCount: number
   requiredAnswered: number
+  /** Trimmed length of the "why did you stop early" answer. */
+  quitReasonChars?: number
   /** Length of a "minute" in ms. Only e2e shortens it. */
   minuteMs?: number
 }
@@ -108,7 +123,8 @@ export function evaluatePayout(i: PayoutInput): PayoutReason {
   const minuteMs = i.minuteMs ?? 60_000
   const minutes = playedMs / minuteMs
   if (i.recordingBytes < MIN_BYTES_PER_MINUTE * (playedMs / 60_000) * 0.5) return 'implausible_recording'
-  if (minutes < i.minMinutes) return 'quit_early'
+  const excused = inQuitGrace(playedMs, i.minMinutes, minuteMs) && (i.quitReasonChars ?? 0) >= QUIT_REASON_MIN_CHARS
+  if (minutes < i.minMinutes && !excused) return 'quit_early'
   if (i.requiredAnswered < i.requiredCount) return 'incomplete'
   return 'paid'
 }

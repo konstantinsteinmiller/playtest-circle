@@ -28,4 +28,7 @@ Playtest Circle is open source and free. These are the next steps, roughly in or
 
 
 - [x] #1 we need a quick onboard video with pictograms explaining the usage of the playtest circle platform.
-- 
+- [x] #2 make starting to browse playtests and starting playtests possible without an account. 
+Only playtest submissions with a game needs a google SSO login. Allow commenting a game on the platform. the playtesters can also browse games without an active playtest and play the games with or without a playtest screnario/recording.
+The first-time user should be able to browse games and test them freely, also check credited playtests and participate freely. Later he can use his locally saved account to create studio by signing in with Google SSO.
+- [x] #3 Playtester can quit early with up to 1 minute before the minimum play time if he enters at least a 60 characters answer(how the minimum 60 chars) in the why he quit early textfield.

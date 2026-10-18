@@ -11,6 +11,7 @@ export type NotificationType =
   | 'escrow_refunded'
   | 'credits_earned'
   | 'credits_granted'
+  | 'game_comment'
 
 /** Types that also go out by email when the user keeps email notifications on. */
 const EMAIL_TYPES: NotificationType[] = ['playtest_received', 'recording_expiring', 'campaign_completed']

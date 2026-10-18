@@ -12,6 +12,8 @@ const session = useSession()
 const route = useRoute()
 const router = useRouter()
 const returnTo = computed(() => (typeof route.query.returnTo === 'string' ? route.query.returnTo : '/browse'))
+/** A guest tried to open the studio: posting a game needs the Google account. */
+const needGoogle = computed(() => route.query.need === 'google')
 const loginError = computed(() => (typeof route.query.login_error === 'string' ? route.query.login_error : ''))
 const devEmail = ref('dev@example.com')
 
@@ -39,16 +41,23 @@ const steps = [
         <p v-if="loginError" class="rounded-xl border-2 border-danger p-3 font-semibold text-danger-ink" role="alert">
           {{ loginError === 'banned' ? $t('landing.banned') : $t('landing.loginError', { reason: loginError }) }}
         </p>
+        <p v-if="needGoogle" class="rounded-xl border-2 border-info-ink p-3 font-semibold text-info-ink" role="status" data-testid="need-google">
+          {{ $t('landing.needGoogle') }}
+        </p>
         <div class="flex flex-wrap gap-3">
-          <RouterLink v-if="session.signedIn" to="/browse" class="btn btn-primary text-lg">{{ $t('landing.ctaSignedIn') }}</RouterLink>
-          <a v-else-if="session.config.googleConfigured" :href="session.loginUrl(returnTo)" class="btn btn-primary text-lg">
-            <GoogleIcon />
-            {{ $t('landing.cta') }}
-          </a>
-          <p v-else class="rounded-xl border-2 border-line p-3 text-muted">{{ $t('landing.loginNotConfigured') }}</p>
+          <RouterLink v-if="!needGoogle" to="/browse" class="btn btn-primary text-lg" data-testid="browse-cta">
+            {{ session.signedIn ? $t('landing.ctaSignedIn') : $t('landing.ctaBrowse') }}
+          </RouterLink>
+          <template v-if="!session.member">
+            <a v-if="session.config.googleConfigured" :href="session.loginUrl(returnTo)" class="btn text-lg" :class="needGoogle ? 'btn-primary' : 'btn-secondary'">
+              <GoogleIcon />
+              {{ session.me?.guest ? $t('landing.ctaLinkGuest') : $t('landing.cta') }}
+            </a>
+            <p v-else class="rounded-xl border-2 border-line p-3 text-muted">{{ $t('landing.loginNotConfigured') }}</p>
+          </template>
           <RouterLink to="/how-it-works" class="btn btn-secondary text-lg">{{ $t('landing.secondary') }}</RouterLink>
         </div>
-        <form v-if="session.config.devLogin && !session.signedIn" class="flex flex-wrap items-end gap-2" @submit.prevent="devLogin">
+        <form v-if="session.config.devLogin && !session.member" class="flex flex-wrap items-end gap-2" @submit.prevent="devLogin">
           <label class="min-w-64">
             <span class="field-label text-sm">{{ $t('landing.devLoginEmail') }}</span>
             <input v-model="devEmail" type="email" class="input" data-testid="dev-email" />

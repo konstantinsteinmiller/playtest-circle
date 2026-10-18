@@ -53,6 +53,7 @@ onMounted(load)
       <div>
         <h1 class="h1">{{ $t('browse.title') }}</h1>
         <p class="mt-1 text-muted">{{ $t('browse.lead') }}</p>
+        <RouterLink to="/games" class="mt-2 inline-block font-semibold text-primary-ink underline" data-testid="all-games-link">{{ $t('browse.allGames') }}</RouterLink>
       </div>
       <div role="radiogroup" :aria-label="$t('browse.layout')" class="inline-flex rounded-xl border-2 border-line p-0.5">
         <button

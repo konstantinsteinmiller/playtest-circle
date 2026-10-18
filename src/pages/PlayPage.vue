@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { countAnswered, type AnswerInput, type CampaignQuestion } from '@shared/questions'
-import type { PayoutReason } from '@shared/rules'
+import { inQuitGrace, QUIT_REASON_MIN_CHARS, type PayoutReason } from '@shared/rules'
 import type { Note, PlaytestDetail } from '@shared/types'
 import QuestionField from '@/components/QuestionField.vue'
 import { useErrorText } from '@/composables/useErrorText'
@@ -103,6 +103,8 @@ const targetMinutes = computed(() => {
 })
 const minReached = computed(() => elapsed.value >= minMs.value)
 const quitEarly = computed(() => recorderMs.value < minMs.value)
+/** Stopped less than a minute early: a long enough quit reason still earns the Credits. */
+const graceOpen = computed(() => quitEarly.value && inQuitGrace(recorderMs.value, campaign.value?.minMinutes ?? 0, minuteMs.value))
 const progress = computed(() => {
   const goal = (targetMinutes.value ?? (campaign.value?.minMinutes ?? 1) * 2) * minuteMs.value
   return Math.min(100, (elapsed.value / goal) * 100)
@@ -235,7 +237,11 @@ async function saveNote() {
 }
 
 async function requestStop() {
-  if (!minReached.value && !window.confirm(t('play.stopConfirmEarly', { n: campaign.value?.minMinutes ?? 0 }))) return
+  const n = campaign.value?.minMinutes ?? 0
+  if (!minReached.value) {
+    const grace = inQuitGrace(elapsed.value, n, minuteMs.value)
+    if (!window.confirm(grace ? t('play.stopConfirmGrace', { n, chars: QUIT_REASON_MIN_CHARS }) : t('play.stopConfirmEarly', { n }))) return
+  }
   await finishRecording()
 }
 
@@ -461,8 +467,19 @@ onBeforeUnmount(() => {
             <button type="button" class="btn btn-primary" @click="retryRecording">{{ $t('play.received.retry') }}</button>
           </div>
         </header>
-        <p v-if="quitEarly" class="rounded-xl border-2 border-warn-ink p-3 font-semibold text-warn-ink">{{ $t('play.quitEarlyNotice') }}</p>
-        <QuestionField v-for="(q, i) in shownQuestions" :key="q.id" v-model="answers[q.id]" :question="q" :required="isRequired(q)" :index="i" />
+        <p v-if="graceOpen" class="rounded-xl border-2 border-warn-ink p-3 font-semibold text-warn-ink" data-testid="quit-grace-notice">
+          {{ $t('play.quitGraceNotice', { chars: QUIT_REASON_MIN_CHARS }) }}
+        </p>
+        <p v-else-if="quitEarly" class="rounded-xl border-2 border-warn-ink p-3 font-semibold text-warn-ink">{{ $t('play.quitEarlyNotice') }}</p>
+        <QuestionField
+          v-for="(q, i) in shownQuestions"
+          :key="q.id"
+          v-model="answers[q.id]"
+          :question="q"
+          :required="isRequired(q)"
+          :index="i"
+          :min-chars="q.id === 'sys_quit_reason' && graceOpen ? QUIT_REASON_MIN_CHARS : undefined"
+        />
         <div class="card sticky bottom-4 flex flex-wrap items-center justify-between gap-3 p-4 shadow-2xl">
           <p class="font-semibold" :class="missing ? 'text-warn-ink' : 'text-primary-ink'" aria-live="polite">
             {{ missing ? $t('play.missing', missing) : '✓' }}

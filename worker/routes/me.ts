@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import type { LedgerRow, Me, NotificationRow, PublicUser } from '../../shared/types'
-import { endSession, requireUser } from '../auth/session'
+import { endSession, requireMember, requireUser } from '../auth/session'
 import { deleteRecording, type PlaytestDbRow } from '../domain'
 import type { AppEnv } from '../env'
 import { tr } from '../i18n'
@@ -47,6 +47,7 @@ meRoutes.get('/me', async (c) => {
     onboarded: !!u.onboarded_at,
     recordingBytes: await ownerRecordingBytes(c.env.DB, s.id),
     cheatRemoved: (u.cheat_notice as number) ?? 0,
+    guest: !!u.guest,
     warnings: (
       await c.env.DB.prepare('SELECT id, reason, created_at FROM user_warnings WHERE user_id = ? AND seen_at IS NULL ORDER BY created_at')
         .bind(s.id)
@@ -157,7 +158,7 @@ meRoutes.get('/me/social-claims', async (c) => {
 })
 
 meRoutes.post('/me/social-claims', async (c) => {
-  const u = requireUser(c)
+  const u = requireMember(c)
   const t = now()
   if (t >= SOCIAL_CLAIM.until) fail(409, 'social_ended')
   const { url } = (await c.req.json()) as { url?: unknown }
@@ -234,7 +235,6 @@ meRoutes.delete('/me', async (c) => {
 })
 
 meRoutes.get('/users/:id', async (c) => {
-  requireUser(c)
   const r = await c.env.DB.prepare('SELECT id, name, avatar_url, rep_up, rep_down, created_at FROM users WHERE id = ? AND deleted_at IS NULL')
     .bind(c.req.param('id'))
     .first<{ id: string; name: string; avatar_url: string | null; rep_up: number; rep_down: number; created_at: number }>()

@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test'
 
-const PORT = 5199
+// Override when another project's dev server already holds the default port.
+const PORT = Number(process.env.E2E_PORT) || 5199
 
 export default defineConfig({
   testDir: 'e2e',

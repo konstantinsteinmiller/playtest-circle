@@ -50,6 +50,8 @@ async function start() {
   starting.value = true
   error.value = ''
   try {
+    // No account needed to test: a first-time visitor gets a guest account right here.
+    await session.ensureGuest()
     const r = await api<{ id: string }>(`/campaigns/${c.value.id}/start`, { method: 'POST' })
     router.push(`/play/${r.id}`)
   } catch (e) {
@@ -71,6 +73,7 @@ async function start() {
           · {{ $t(`hosts.${c.game.host}`) }}
         </p>
         <h1 class="h1">{{ c.game.title }}</h1>
+        <RouterLink :to="`/g/${c.game.id}`" class="inline-block font-semibold text-primary-ink underline" data-testid="game-page-link">💬 {{ $t('campaign.gamePage') }}</RouterLink>
         <p class="text-lg">{{ c.game.pitch }}</p>
         <div class="flex flex-wrap gap-2">
           <span v-for="tag in c.game.tags" :key="tag" class="chip">#{{ tag }}</span>
@@ -162,6 +165,7 @@ async function start() {
         <button v-else type="button" class="btn btn-primary w-full text-lg" :disabled="starting" data-testid="start-playtest" @click="start">
           ▶ {{ $t('campaign.startPlaytest') }}
         </button>
+        <p v-if="!session.signedIn && !blocker" class="text-sm text-muted" data-testid="guest-hint">{{ $t('campaign.guestHint') }}</p>
         <p v-if="error" class="font-semibold text-danger-ink" role="alert">{{ error }}</p>
       </div>
     </aside>

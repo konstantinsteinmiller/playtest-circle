@@ -12,6 +12,8 @@ export interface Me {
   email: string
   avatarUrl: string | null
   role: Role
+  /** Signed in without Google: tests and comments, but can't post games until linked. */
+  guest: boolean
   credits: number
   /** Credits held in escrow for this user's live and paused campaigns (paid out per finished test). */
   reserved: number
@@ -166,4 +168,37 @@ export interface NotificationRow {
   payload: Record<string, unknown>
   readAt: number | null
   createdAt: number
+}
+
+/** A game in the public catalog, with or without an open paid playtest. */
+export interface GameCard {
+  id: string
+  title: string
+  pitch: string
+  tags: string[]
+  host: GameHost
+  coverUrl: string | null
+  hoverClipUrl: string | null
+  owner: Pick<PublicUser, 'id' | 'name'>
+  /** Live campaigns with free slots: paid playtests the viewer could start. */
+  openPlaytests: number
+  /** Best reward among those campaigns, 0 when there is none. */
+  topPrice: number
+  comments: number
+}
+
+export interface GameComment {
+  id: string
+  text: string
+  createdAt: number
+  author: Pick<PublicUser, 'id' | 'name' | 'avatarUrl'> & { guest: boolean }
+  /** The viewer may delete it: author, game owner or admin. */
+  canDelete: boolean
+}
+
+export interface GamePage {
+  game: Game
+  owner: PublicUser
+  campaigns: CampaignCard[]
+  comments: GameComment[]
 }

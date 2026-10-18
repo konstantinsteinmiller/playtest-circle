@@ -10,7 +10,7 @@ import {
   validateSlots,
 } from '../../shared/rules'
 import type { CampaignInput, PlaytestStatus } from '../../shared/types'
-import { requireUser } from '../auth/session'
+import { requireMember, requireUser } from '../auth/session'
 import {
   CAMPAIGN_FROM,
   CAMPAIGN_SELECT,
@@ -37,7 +37,7 @@ const SORTS: Record<string, string> = {
 
 /** Browse: live campaigns the viewer can still take. */
 campaignRoutes.get('/', async (c) => {
-  const u = requireUser(c)
+  const viewer = c.get('user')
   const q = c.req.query()
   const where = [
     "c.status = 'live'",
@@ -45,7 +45,7 @@ campaignRoutes.get('/', async (c) => {
     'c.owner_id != ?1',
     'NOT EXISTS (SELECT 1 FROM playtests mp WHERE mp.campaign_id = c.id AND mp.tester_id = ?1)',
   ]
-  const params: (string | number)[] = [u.id]
+  const params: (string | number)[] = [viewer?.id ?? '']
   const bind = (v: string | number) => {
     params.push(v)
     return `?${params.length}`
@@ -84,18 +84,20 @@ campaignRoutes.get('/mine', async (c) => {
 })
 
 campaignRoutes.get('/:id', async (c) => {
-  const u = requireUser(c)
+  const u = c.get('user')
   const r = await loadCampaign(c.env, c.req.param('id')!)
-  if (!r || (r.hidden_at && r.owner_id !== u.id && u.role !== 'admin')) fail(404, 'not_found')
-  const mine = await c.env.DB.prepare('SELECT id, status, credits_awarded FROM playtests WHERE campaign_id = ? AND tester_id = ?')
-    .bind(r.id, u.id)
-    .first<{ id: string; status: PlaytestStatus; credits_awarded: number | null }>()
+  if (!r || (r.hidden_at && r.owner_id !== u?.id && u?.role !== 'admin')) fail(404, 'not_found')
+  const mine = u
+    ? await c.env.DB.prepare('SELECT id, status, credits_awarded FROM playtests WHERE campaign_id = ? AND tester_id = ?')
+        .bind(r.id, u.id)
+        .first<{ id: string; status: PlaytestStatus; credits_awarded: number | null }>()
+    : null
   return c.json({ campaign: mapCampaignDetail(r, mine) })
 })
 
 /** Publish: freezes the questionnaire and moves slots × price into escrow in one transaction. */
 campaignRoutes.post('/', async (c) => {
-  const u = requireUser(c)
+  const u = requireMember(c)
   const b = (await c.req.json()) as Partial<CampaignInput>
   const game = await c.env.DB.prepare('SELECT id FROM games WHERE id = ? AND owner_id = ? AND archived_at IS NULL')
     .bind(b.gameId ?? '', u.id)
@@ -188,6 +190,7 @@ campaignRoutes.post('/:id/cancel', async (c) => {
 })
 
 campaignRoutes.post('/:id/slots', async (c) => {
+  requireMember(c)
   const { u, r } = await ownCampaign(c)
   const add = Number(((await c.req.json()) as { add: number }).add)
   if (r.status !== 'live' && r.status !== 'paused' && r.status !== 'completed') fail(409, 'not_active')

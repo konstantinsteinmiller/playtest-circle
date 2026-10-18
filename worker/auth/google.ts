@@ -1,7 +1,7 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../env'
 import { b64url, b64urlDecode, fail, now, randomToken } from '../lib'
-import { endSession, startSession, upsertUser } from './session'
+import { createGuest, endSession, startSession, upsertUser } from './session'
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -12,6 +12,19 @@ const redirectUri = (reqUrl: string) => `${new URL(reqUrl).origin}/api/auth/goog
 
 /** Only same-site relative paths, so the login can never become an open redirect. */
 const safeReturn = (p: string | undefined) => (p && p.startsWith('/') && !p.startsWith('//') ? p : '/browse')
+
+/** The signed-in guest whose progress a Google sign-in keeps, if any. */
+const guestOf = (c: Context<AppEnv>) => {
+  const u = c.get('user')
+  return u?.guest ? u.id : null
+}
+
+/** Browse and test without Google: a guest account that lives in this browser's session cookie. */
+authRoutes.post('/guest', async (c) => {
+  if (c.get('user')) return c.json({ ok: true })
+  await startSession(c, await createGuest(c.env))
+  return c.json({ ok: true })
+})
 
 authRoutes.get('/google/start', async (c) => {
   if (!c.env.GOOGLE_CLIENT_ID) fail(400, 'google_not_configured')
@@ -81,7 +94,7 @@ authRoutes.get('/google/callback', async (c) => {
     email: claims.email,
     name: claims.name ?? claims.email.split('@')[0],
     picture: claims.picture ?? null,
-  })
+  }, guestOf(c))
   const banned = await c.env.DB.prepare('SELECT banned_at FROM users WHERE id = ?').bind(userId).first<{ banned_at: number | null }>()
   if (banned?.banned_at) return c.redirect('/?login_error=banned')
   await startSession(c, userId)
@@ -98,7 +111,7 @@ authRoutes.post('/dev-login', async (c) => {
   if (c.env.DEV_LOGIN !== '1') fail(404, 'not_found')
   const body = (await c.req.json()) as { email?: string; name?: string }
   const email = (body.email ?? 'dev@example.com').toLowerCase()
-  const userId = await upsertUser(c.env, { sub: `dev:${email}`, email, name: body.name ?? email.split('@')[0], picture: null })
+  const userId = await upsertUser(c.env, { sub: `dev:${email}`, email, name: body.name ?? email.split('@')[0], picture: null }, guestOf(c))
   await startSession(c, userId)
   return c.json({ ok: true, userId })
 })
