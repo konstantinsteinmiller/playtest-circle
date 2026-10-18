@@ -26,11 +26,11 @@ async function signOut() {
   router.push('/')
 }
 
-// Browsing needs no account; the studio needs Google, the wallet any account (guests earn Credits too).
+// Browsing needs no account; the studio and wallet need one, guest or Google.
 const links = computed(() => [
   { to: '/browse', key: 'nav.browse' },
   { to: '/games', key: 'nav.games' },
-  ...(session.member ? [{ to: '/studio', key: 'nav.studio' }] : []),
+  ...(session.signedIn ? [{ to: '/studio', key: 'nav.studio' }] : []),
   ...(session.signedIn ? [{ to: '/wallet', key: 'nav.wallet' }] : []),
   { to: '/how-it-works', key: 'nav.howItWorks' },
 ])

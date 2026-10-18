@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { COMMENT_RATE, MAX_COMMENT_LENGTH, MAX_HOVER_CLIP_BYTES, MAX_IMAGE_BYTES, MAX_SCREENSHOTS } from '../../shared/rules'
 import type { CampaignCard, GameCard, GameComment, GameHost, GameInput, GamePage } from '../../shared/types'
-import { requireMember, requireUser } from '../auth/session'
+import { requireUser } from '../auth/session'
 import { CAMPAIGN_FROM, CAMPAIGN_SELECT, mapCampaignCard, mapGame, type CampaignRow, type GameRow } from '../domain'
 import type { AppEnv } from '../env'
 import { fail, httpUrl, newId, now, str } from '../lib'
@@ -181,7 +181,7 @@ gameRoutes.get('/:id', async (c) => {
 })
 
 gameRoutes.post('/', async (c) => {
-  const u = requireMember(c)
+  const u = requireUser(c)
   const g = parseGame(u.id, await c.req.json())
   const id = newId()
   const t = now()
@@ -195,7 +195,7 @@ gameRoutes.post('/', async (c) => {
 })
 
 gameRoutes.put('/:id', async (c) => {
-  const u = requireMember(c)
+  const u = requireUser(c)
   const id = c.req.param('id')
   const owner = await c.env.DB.prepare('SELECT owner_id FROM games WHERE id = ?').bind(id).first<{ owner_id: string }>()
   if (!owner || owner.owner_id !== u.id) fail(404, 'not_found')
@@ -210,7 +210,7 @@ gameRoutes.put('/:id', async (c) => {
 })
 
 gameRoutes.delete('/:id', async (c) => {
-  const u = requireMember(c)
+  const u = requireUser(c)
   const id = c.req.param('id')
   const live = await c.env.DB.prepare("SELECT COUNT(*) AS n FROM campaigns WHERE game_id = ? AND status IN ('live','paused')")
     .bind(id)
@@ -222,7 +222,7 @@ gameRoutes.delete('/:id', async (c) => {
 
 /** Presigned upload for a cover, screenshot or hover clip. The client PUTs the file body itself. */
 gameRoutes.post('/media-upload', async (c) => {
-  const u = requireMember(c)
+  const u = requireUser(c)
   const b = (await c.req.json()) as { kind: 'image' | 'clip'; contentType: string; size: number }
   const isImage = b.kind === 'image'
   const types = isImage ? IMAGE_TYPES : CLIP_TYPES

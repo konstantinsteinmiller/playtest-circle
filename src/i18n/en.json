@@ -103,11 +103,10 @@
     "statWelcome": "Credits to start",
     "statRecordings": "days until recordings are deleted",
     "statOpen": "open source",
-    "gated": "Browse, play and test without an account. Google sign-in is only needed to post your own game.",
+    "gated": "No sign-up needed: try everything as a guest, posting your own game included. Sign in with Google any time to keep your account for good.",
     "banned": "This account has been banned for misusing the platform.",
-    "ctaBrowse": "Browse playtests — no sign-up",
-    "ctaLinkGuest": "Sign in with Google to keep your guest account",
-    "needGoogle": "Posting your own game needs a Google sign-in. Your guest account — Credits, playtests and comments — moves over with you."
+    "ctaGuest": "Try as guest",
+    "ctaLinkGuest": "Sign in with Google to keep your guest account"
   },
   "tutorial": {
     "title": "How Playtest Circle works",
@@ -221,7 +220,7 @@
     "beforeYouStart": "Before you start: the game opens in a new tab and you'll share that tab for recording. Desktop Chrome, Edge or Opera required.",
     "earned": "You earned {n} Credit already | You earned {n} Credits already",
     "gamePage": "Game page & comments",
-    "guestHint": "No account needed: you test as a guest and keep the Credits you earn. Sign in with Google later to post your own game."
+    "guestHint": "No account needed: you test as a guest and keep the Credits you earn. Sign in with Google later to keep your account."
   },
   "play": {
     "title": "Playtest",
@@ -485,6 +484,9 @@
     "lead": "Your games, your campaigns and every session testers recorded for you.",
     "games": "My games",
     "newGame": "New game",
+    "guestTitle": "You're using a guest account",
+    "guestBody": "Games and campaigns you add here are tied to this browser's cache. Clearing site data, switching browsers or using a private window ends the guest session, and they can be lost for good. Sign in with Google to keep them — everything moves over with you.",
+    "guestKeep": "Sign in with Google to keep your games",
     "noGames": "No games yet. Create one — it takes about 5 minutes.",
     "campaigns": "My campaigns",
     "newCampaign": "Launch a playtest",
@@ -871,7 +873,7 @@
     "social_url_used": "This post was already claimed.",
     "social_max_reached": "You've already claimed the maximum number of posts.",
     "social_ended": "The testing-period promotion has ended.",
-    "google_required": "Posting games needs a Google sign-in. Your guest account moves over with you.",
+    "google_required": "This needs a Google sign-in. Your guest account moves over with you.",
     "too_many_comments": "You are commenting very fast. Please wait a few minutes."
   },
   "time": {

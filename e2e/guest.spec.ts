@@ -82,9 +82,9 @@ test('a guest tests, quits inside the grace window, comments and links Google', 
   await t.getByTestId('post-comment').click()
   await expect(t.getByTestId('comment').first()).toContainText('Guest')
 
-  // The studio needs Google.
+  // Guests may use the studio, warned that their games live only in this browser.
   await t.goto('/studio')
-  await expect(t.getByTestId('need-google')).toBeVisible()
+  await expect(t.getByTestId('studio-guest-warning')).toBeVisible()
 
   // Signing in with Google upgrades the guest in place: Credits, playtest and comment stay.
   await t.request.post('/api/auth/dev-login', { data: { email: 'gus@example.com', name: 'Gus Tester' } })
@@ -123,4 +123,13 @@ test('a guest who signs into an existing account is merged into it', async ({ br
   await ctx.close()
   await existing.close()
   await devCtx.close()
+})
+
+test('"Try as guest" on the landing starts a guest who may open the studio', async ({ page }) => {
+  await page.goto('/')
+  await page.getByTestId('try-guest').click()
+  await expect(page).toHaveURL(/\/browse/)
+  expect((await (await page.request.get('/api/me')).json()).user.guest).toBe(true)
+  await page.goto('/studio')
+  await expect(page.getByTestId('studio-guest-warning')).toBeVisible()
 })

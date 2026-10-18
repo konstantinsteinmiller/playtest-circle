@@ -9,12 +9,12 @@ const routes: RouteRecordRaw[] = [
   { path: '/g/:id', name: 'game', component: () => import('./pages/GamePage.vue'), meta: { public: true, app: true } },
   { path: '/c/:id', name: 'campaign', component: () => import('./pages/CampaignPage.vue'), meta: { public: true, app: true } },
   { path: '/play/:id', name: 'play', component: () => import('./pages/PlayPage.vue') },
-  { path: '/studio', name: 'studio', component: () => import('./pages/studio/StudioPage.vue'), meta: { member: true } },
-  { path: '/studio/games/new', name: 'game-new', component: () => import('./pages/studio/GameEditorPage.vue'), meta: { member: true } },
-  { path: '/studio/games/:id/edit', name: 'game-edit', component: () => import('./pages/studio/GameEditorPage.vue'), meta: { member: true } },
-  { path: '/studio/campaigns/new', name: 'campaign-new', component: () => import('./pages/studio/CampaignWizardPage.vue'), meta: { member: true } },
-  { path: '/studio/campaigns/:id', name: 'campaign-results', component: () => import('./pages/studio/CampaignResultsPage.vue'), meta: { member: true } },
-  { path: '/studio/playtests/:id', name: 'playtest-review', component: () => import('./pages/studio/PlaytestReviewPage.vue'), meta: { member: true } },
+  { path: '/studio', name: 'studio', component: () => import('./pages/studio/StudioPage.vue') },
+  { path: '/studio/games/new', name: 'game-new', component: () => import('./pages/studio/GameEditorPage.vue') },
+  { path: '/studio/games/:id/edit', name: 'game-edit', component: () => import('./pages/studio/GameEditorPage.vue') },
+  { path: '/studio/campaigns/new', name: 'campaign-new', component: () => import('./pages/studio/CampaignWizardPage.vue') },
+  { path: '/studio/campaigns/:id', name: 'campaign-results', component: () => import('./pages/studio/CampaignResultsPage.vue') },
+  { path: '/studio/playtests/:id', name: 'playtest-review', component: () => import('./pages/studio/PlaytestReviewPage.vue') },
   { path: '/wallet', name: 'wallet', component: () => import('./pages/WalletPage.vue') },
   { path: '/settings', name: 'settings', component: () => import('./pages/SettingsPage.vue') },
   { path: '/u/:id', name: 'profile', component: () => import('./pages/ProfilePage.vue'), meta: { public: true } },
@@ -39,8 +39,6 @@ router.beforeEach(async (to) => {
   if (me && !me.onboarded && (to.meta.app || !to.meta.public)) return { name: 'tutorial' }
   if (to.meta.public) return true
   if (!me) return { name: 'landing', query: { returnTo: to.fullPath } }
-  // Guests can browse, test and comment; posting a game needs the Google account.
-  if (to.meta.member && me.guest) return { name: 'landing', query: { returnTo: to.fullPath, need: 'google' } }
   return true
 })
 

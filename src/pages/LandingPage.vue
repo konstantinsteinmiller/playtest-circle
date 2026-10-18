@@ -12,10 +12,20 @@ const session = useSession()
 const route = useRoute()
 const router = useRouter()
 const returnTo = computed(() => (typeof route.query.returnTo === 'string' ? route.query.returnTo : '/browse'))
-/** A guest tried to open the studio: posting a game needs the Google account. */
-const needGoogle = computed(() => route.query.need === 'google')
 const loginError = computed(() => (typeof route.query.login_error === 'string' ? route.query.login_error : ''))
 const devEmail = ref('dev@example.com')
+
+const guestBusy = ref(false)
+/** Starts a guest account in this browser, no sign-in needed. */
+async function tryAsGuest() {
+  guestBusy.value = true
+  try {
+    await session.ensureGuest()
+    router.push(returnTo.value)
+  } finally {
+    guestBusy.value = false
+  }
+}
 
 async function devLogin() {
   await api('/auth/dev-login', { method: 'POST', json: { email: devEmail.value } })
@@ -41,15 +51,13 @@ const steps = [
         <p v-if="loginError" class="rounded-xl border-2 border-danger p-3 font-semibold text-danger-ink" role="alert">
           {{ loginError === 'banned' ? $t('landing.banned') : $t('landing.loginError', { reason: loginError }) }}
         </p>
-        <p v-if="needGoogle" class="rounded-xl border-2 border-info-ink p-3 font-semibold text-info-ink" role="status" data-testid="need-google">
-          {{ $t('landing.needGoogle') }}
-        </p>
         <div class="flex flex-wrap gap-3">
-          <RouterLink v-if="!needGoogle" to="/browse" class="btn btn-primary text-lg" data-testid="browse-cta">
-            {{ session.signedIn ? $t('landing.ctaSignedIn') : $t('landing.ctaBrowse') }}
-          </RouterLink>
+          <RouterLink v-if="session.signedIn" to="/browse" class="btn btn-primary text-lg" data-testid="browse-cta">{{ $t('landing.ctaSignedIn') }}</RouterLink>
+          <button v-else type="button" class="btn btn-primary text-lg" :disabled="guestBusy" data-testid="try-guest" @click="tryAsGuest">
+            {{ $t('landing.ctaGuest') }}
+          </button>
           <template v-if="!session.member">
-            <a v-if="session.config.googleConfigured" :href="session.loginUrl(returnTo)" class="btn text-lg" :class="needGoogle ? 'btn-primary' : 'btn-secondary'">
+            <a v-if="session.config.googleConfigured" :href="session.loginUrl(returnTo)" class="btn btn-secondary text-lg">
               <GoogleIcon />
               {{ session.me?.guest ? $t('landing.ctaLinkGuest') : $t('landing.cta') }}
             </a>
@@ -64,7 +72,7 @@ const steps = [
           </label>
           <button type="submit" class="btn btn-secondary" data-testid="dev-login">{{ $t('landing.devLogin') }}</button>
         </form>
-        <p class="text-sm text-muted">🔒 {{ $t('landing.gated') }}</p>
+        <p v-if="!session.member" class="text-sm text-muted">{{ $t('landing.gated') }}</p>
       </div>
       <div class="card relative overflow-hidden p-8">
         <div class="absolute -top-16 -right-16 size-56 rounded-full bg-primary opacity-20 blur-3xl" aria-hidden="true" />

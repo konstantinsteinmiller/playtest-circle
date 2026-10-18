@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import GoogleIcon from '@/components/GoogleIcon.vue'
 import { computed, onMounted, ref } from 'vue'
 import { PRICE_MIN, RECORDING_QUOTA_BYTES } from '@shared/rules'
 import type { CampaignCard, Game } from '@shared/types'
@@ -44,6 +45,12 @@ const statusClass: Record<string, string> = {
         <RouterLink to="/studio/campaigns/new" class="btn btn-primary">🚀 {{ $t('studio.newCampaign') }}</RouterLink>
       </div>
     </header>
+
+    <section v-if="session.me?.guest" class="card border-warn-ink p-5" role="status" data-testid="studio-guest-warning">
+      <h2 class="h3 text-warn-ink">{{ $t('studio.guestTitle') }}</h2>
+      <p class="mt-1">{{ $t('studio.guestBody') }}</p>
+      <a :href="session.loginUrl('/studio')" class="btn btn-primary mt-3"><GoogleIcon />{{ $t('studio.guestKeep') }}</a>
+    </section>
 
     <section v-if="session.me && session.me.credits < PRICE_MIN" class="card border-warn-ink p-5">
       <h2 class="h3 text-warn-ink">{{ $t('studio.needCreditsTitle') }}</h2>

@@ -10,7 +10,7 @@ import {
   validateSlots,
 } from '../../shared/rules'
 import type { CampaignInput, PlaytestStatus } from '../../shared/types'
-import { requireMember, requireUser } from '../auth/session'
+import { requireUser } from '../auth/session'
 import {
   CAMPAIGN_FROM,
   CAMPAIGN_SELECT,
@@ -97,7 +97,7 @@ campaignRoutes.get('/:id', async (c) => {
 
 /** Publish: freezes the questionnaire and moves slots × price into escrow in one transaction. */
 campaignRoutes.post('/', async (c) => {
-  const u = requireMember(c)
+  const u = requireUser(c)
   const b = (await c.req.json()) as Partial<CampaignInput>
   const game = await c.env.DB.prepare('SELECT id FROM games WHERE id = ? AND owner_id = ? AND archived_at IS NULL')
     .bind(b.gameId ?? '', u.id)
@@ -190,7 +190,7 @@ campaignRoutes.post('/:id/cancel', async (c) => {
 })
 
 campaignRoutes.post('/:id/slots', async (c) => {
-  requireMember(c)
+  requireUser(c)
   const { u, r } = await ownCampaign(c)
   const add = Number(((await c.req.json()) as { add: number }).add)
   if (r.status !== 'live' && r.status !== 'paused' && r.status !== 'completed') fail(409, 'not_active')
