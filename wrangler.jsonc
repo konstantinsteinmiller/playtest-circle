@@ -1,6 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "app",
+  // Cloudflare login: konstantinsteinmiller@googlemail.com. Pinned so a deploy from another account fails fast.
+  "account_id": "f7f5a13b1bc747cf5c2b9a6f187960e1",
   "main": "worker/index.ts",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
