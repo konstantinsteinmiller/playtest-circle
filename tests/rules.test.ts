@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { priceAdvice, contiguousParts, normalizeSocialUrl,
+import { socialClaimTerms, SOCIAL_CLAIM, priceAdvice, contiguousParts, normalizeSocialUrl,
   PRICE_MAX,
   PRICE_MIN,
   RECORDING,
@@ -172,5 +172,13 @@ describe('normalizeSocialUrl', () => {
     expect(normalizeSocialUrl('http://x.com/me/status/1')).toBeNull()
     expect(normalizeSocialUrl('https://x.com/')).toBeNull()
     expect(normalizeSocialUrl('not a url')).toBeNull()
+  })
+})
+
+describe('socialClaimTerms', () => {
+  it('pays 20 Credits up to 3 times until 30 Dec 2026, then 10 for a first post only', () => {
+    expect(new Date(SOCIAL_CLAIM.until).toISOString()).toBe('2026-12-30T23:00:00.000Z')
+    expect(socialClaimTerms(SOCIAL_CLAIM.until - 1)).toEqual({ credits: 20, maxPerUser: 3, promo: true })
+    expect(socialClaimTerms(SOCIAL_CLAIM.until)).toEqual({ credits: 10, maxPerUser: 1, promo: false })
   })
 })

@@ -96,6 +96,21 @@ test('a studio requests a replay from one tester, who can decline it or play it'
   expect(browse.campaigns.map((c: { id: string }) => c.id)).not.toContain(replayId)
   await otherCtx.close()
 
+  // ---------------------------------------------------------------- unstarted for 14 days: cancelled and refunded
+  await dev.request.post('/api/dev/expire-and-cron', { data: { campaignId: replayId } })
+  expect(await credits(dev)).toBe(5)
+  expect((await (await dev.request.get(`/api/campaigns/${replayId}`)).json()).campaign.status).toBe('cancelled')
+  await tester.goto('/browse')
+  await expect(tester.getByRole('heading', { name: /Playtests waiting/ })).toBeVisible()
+  await expect(tester.getByTestId('replay-invites')).toHaveCount(0)
+
+  // ---------------------------------------------------------------- a new request, which the tester declines
+  await dev.goto(resultsUrl)
+  await dev.getByTestId('request-replay').click()
+  await dev.getByTestId('replay-submit').click()
+  await expect(dev.getByTestId('replay-pending')).toBeVisible()
+  expect(await credits(dev)).toBe(0)
+
   // ---------------------------------------------------------------- tester declines: the studio is refunded
   await tester.goto('/browse')
   const invites = tester.getByTestId('replay-invites')

@@ -14,6 +14,7 @@ export type NotificationType =
   | 'game_comment'
   | 'replay_requested'
   | 'replay_declined'
+  | 'replay_expired'
 
 /** Types that also go out by email when the user keeps email notifications on. */
 const EMAIL_TYPES: NotificationType[] = ['playtest_received', 'recording_expiring', 'campaign_completed', 'replay_requested']

@@ -703,7 +703,8 @@
       "template": "Playtest Circle: game devs test each other's games for high-value feedback. Screen recording + think-aloud mic on top of custom questionnaires. Quid pro quo, nobody's time exploited. 🎮🔁\n\n{url}",
       "copy": "Copy text",
       "copied": "Copied!",
-      "shareOn": "Post on {network}"
+      "shareOn": "Post on {network}",
+      "bodyFirst": "Post about Playtest Circle on any social network and paste the link to your post. Your first post earns {n} Credits."
     },
     "reserved": "+ ◎ {n} reserved in your campaigns",
     "reservedHint": "Paid upfront when you published. Each finished test is paid from it; unused Credits come back when the campaign ends."
@@ -770,6 +771,10 @@
     "replay_declined": {
       "title": "Replay of {game} declined",
       "body": "{tester} declined the replay. Your {credits} Credits are back in your wallet."
+    },
+    "replay_expired": {
+      "title": "Replay of {game} expired",
+      "body": "{tester} didn’t start the replay within 14 days. Your {credits} Credits are back in your wallet."
     }
   },
   "mail": {
@@ -974,13 +979,13 @@
     "for": "Replay for {name}",
     "original": "See the original session",
     "formTitle": "Ask {name} to replay",
-    "formLead": "Send a private playtest to this tester so they can check your improvements. Same questionnaire and playtime as this campaign; only they can take it.",
+    "formLead": "Send a private playtest to this tester so they can check your improvements. Same questionnaire and playtime as this campaign; only they can take it. If they don’t start it within 14 days, it is cancelled and refunded.",
     "buildLabel": "New build label",
     "buildUrl": "Build link",
     "instructions": "What changed?",
     "instructionsHint": "e.g. Fixed the jump you mentioned, the second level is shorter now. Does the start feel better?",
     "price": "Credits for this replay",
-    "cost": "{n} Credits go into escrow now (you have {balance}). You get them back if the tester declines or the replay doesn't pay out.",
+    "cost": "{n} Credits go into escrow now (you have {balance}). You get them back if the tester declines, doesn’t start within 14 days, or the replay doesn’t pay out.",
     "send": "Send replay request",
     "invited": "{studio} asked you to replay {game} and check what they improved since your last session.",
     "decline": "Decline replay",

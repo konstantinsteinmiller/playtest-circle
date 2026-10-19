@@ -47,11 +47,12 @@ app.post('/dev/clawback', async (c) => {
   return c.json({ ok: true })
 })
 
-/** e2e only (DEV_LOGIN=1): time out one playtest's reservation and run the hourly job now. */
+/** e2e only (DEV_LOGIN=1): time out one playtest's reservation (or age one campaign) and run the hourly job now. */
 app.post('/dev/expire-and-cron', async (c) => {
   if (c.env.DEV_LOGIN !== '1') return c.json({ error: 'not_found' }, 404)
-  const { playtestId } = (await c.req.json()) as { playtestId: string }
-  await c.env.DB.prepare('UPDATE playtests SET reserved_until = 0 WHERE id = ?').bind(playtestId).run()
+  const { playtestId, campaignId } = (await c.req.json()) as { playtestId?: string; campaignId?: string }
+  if (playtestId) await c.env.DB.prepare('UPDATE playtests SET reserved_until = 0 WHERE id = ?').bind(playtestId).run()
+  if (campaignId) await c.env.DB.prepare('UPDATE campaigns SET published_at = 0 WHERE id = ?').bind(campaignId).run()
   await runCron(c.env)
   return c.json({ ok: true })
 })

@@ -208,8 +208,19 @@ export const CHEAT = { credits: 10, until: TESTING_PERIOD_END }
 export const SOCIAL_CLAIM = {
   credits: 20,
   maxPerUser: 3,
-  until: TESTING_PERIOD_END,
+  // Runs longer than the testing period: through 30 Dec 2026, Berlin time.
+  until: Date.UTC(2026, 11, 30, 23, 0, 0),
 }
+
+/** What a social post earns at time `t`: the promo until its end, then 10 Credits for a user's first post only. */
+export function socialClaimTerms(t: number): { credits: number; maxPerUser: number; promo: boolean } {
+  return t < SOCIAL_CLAIM.until
+    ? { credits: SOCIAL_CLAIM.credits, maxPerUser: SOCIAL_CLAIM.maxPerUser, promo: true }
+    : { credits: 10, maxPerUser: 1, promo: false }
+}
+
+/** A replay the tester hasn't started is cancelled and refunded after this long. */
+export const REPLAY_TTL_MS = 14 * 86_400_000
 
 const SOCIAL_HOSTS = [
   'x.com', 'twitter.com', 'bsky.app', 'threads.net', 'threads.com', 'instagram.com', 'facebook.com', 'fb.com',

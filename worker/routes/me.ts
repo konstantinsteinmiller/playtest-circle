@@ -5,7 +5,7 @@ import { deleteRecording, type PlaytestDbRow } from '../domain'
 import type { AppEnv } from '../env'
 import { tr } from '../i18n'
 import { fail, newId, now, parseJson } from '../lib'
-import { CHEAT, normalizeSocialUrl, SOCIAL_CLAIM } from '../../shared/rules'
+import { CHEAT, normalizeSocialUrl, SOCIAL_CLAIM, socialClaimTerms } from '../../shared/rules'
 import { storage } from '../storage'
 
 export const meRoutes = new Hono<AppEnv>()
@@ -150,22 +150,25 @@ meRoutes.get('/me/social-claims', async (c) => {
   const { results } = await c.env.DB.prepare('SELECT id, url, credits, created_at FROM social_claims WHERE user_id = ? ORDER BY created_at')
     .bind(u.id)
     .all<{ id: string; url: string; credits: number; created_at: number }>()
+  const terms = socialClaimTerms(now())
   return c.json({
     claims: results.map((r) => ({ id: r.id, url: r.url, credits: r.credits, createdAt: r.created_at })),
-    ...SOCIAL_CLAIM,
-    open: now() < SOCIAL_CLAIM.until,
+    ...terms,
+    until: SOCIAL_CLAIM.until,
+    // After the promo only a user's first post still earns.
+    open: terms.promo || results.length === 0,
   })
 })
 
 meRoutes.post('/me/social-claims', async (c) => {
   const u = requireMember(c)
   const t = now()
-  if (t >= SOCIAL_CLAIM.until) fail(409, 'social_ended')
+  const terms = socialClaimTerms(t)
   const { url } = (await c.req.json()) as { url?: unknown }
   const clean = typeof url === 'string' ? normalizeSocialUrl(url) : null
   if (!clean) fail(422, 'invalid_social_url')
   const id = newId()
-  const n = SOCIAL_CLAIM.credits
+  const n = terms.credits
   let inserted = 0
   try {
     // Insert, credit and ledger only take effect when the claim row went in (limit checked in the same statement).
@@ -173,7 +176,7 @@ meRoutes.post('/me/social-claims', async (c) => {
       c.env.DB.prepare(
         `INSERT INTO social_claims (id, user_id, url, credits, created_at)
          SELECT ?, ?, ?, ?, ? WHERE (SELECT COUNT(*) FROM social_claims WHERE user_id = ?) < ?`,
-      ).bind(id, u.id, clean, n, t, u.id, SOCIAL_CLAIM.maxPerUser),
+      ).bind(id, u.id, clean, n, t, u.id, terms.maxPerUser),
       c.env.DB.prepare('UPDATE users SET credits = credits + ? WHERE id = ? AND EXISTS (SELECT 1 FROM social_claims WHERE id = ?)').bind(n, u.id, id),
       c.env.DB.prepare(
         `INSERT INTO credit_ledger (id, user_id, delta, reason, ref_type, ref_id, created_at)

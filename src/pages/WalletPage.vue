@@ -29,6 +29,7 @@ interface SocialState {
   credits: number
   maxPerUser: number
   until: number
+  promo: boolean
   open: boolean
 }
 const social = ref<SocialState | null>(null)
@@ -117,8 +118,9 @@ function testStatus(x: MyTest) {
 
     <section v-if="social?.open" class="card space-y-3 border-primary p-6" data-testid="social-claim">
       <h2 class="h2">{{ $t('wallet.social.title', { n: social.credits }) }}</h2>
-      <p>{{ $t('wallet.social.body', { n: social.credits, max: social.maxPerUser, date: d(new Date(social.until - 1), { dateStyle: 'long' } as never) }) }}</p>
-      <p class="text-sm font-semibold text-muted">{{ $t('wallet.social.used', { used: social.claims.length, max: social.maxPerUser }) }}</p>
+      <p v-if="social.promo">{{ $t('wallet.social.body', { n: social.credits, max: social.maxPerUser, date: d(new Date(social.until - 1), { dateStyle: 'long' } as never) }) }}</p>
+      <p v-else>{{ $t('wallet.social.bodyFirst', { n: social.credits }) }}</p>
+      <p v-if="social.promo" class="text-sm font-semibold text-muted">{{ $t('wallet.social.used', { used: social.claims.length, max: social.maxPerUser }) }}</p>
       <ul v-if="social.claims.length" class="space-y-1 text-sm">
         <li v-for="c in social.claims" :key="c.id" class="truncate">
           ✓ <a :href="c.url" target="_blank" rel="noopener noreferrer" class="underline">{{ c.url }}</a> · +{{ c.credits }}

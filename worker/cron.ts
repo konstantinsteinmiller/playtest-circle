@@ -1,5 +1,5 @@
-import { EXPIRY_WARNING_MS } from '../shared/rules'
-import { deleteRecording, enforceStorageBudget, recordingExpiry, releaseSlot, salvageUpload, type PlaytestDbRow } from './domain'
+import { EXPIRY_WARNING_MS, REPLAY_TTL_MS } from '../shared/rules'
+import { creditStmt, deleteRecording, enforceStorageBudget, recordingExpiry, releaseSlot, salvageUpload, type PlaytestDbRow } from './domain'
 import type { Env } from './env'
 import { now } from './lib'
 import { notify } from './notify'
@@ -64,10 +64,26 @@ export async function runCron(env: Env) {
     await notify(env, p.owner_id, 'recording_expiring', { game: p.title }, `/studio/playtests/${p.id}`)
   }
 
-  // 4. Stay under the global storage budget even without new uploads.
+  // 4. Replays nobody started within 14 days end, and the studio gets its escrow back.
+  const { results: idle } = await env.DB.prepare(
+    `SELECT c.id, c.owner_id, c.escrow, g.title, u.name FROM campaigns c JOIN games g ON g.id = c.game_id JOIN users u ON u.id = c.invited_tester_id
+     WHERE c.invited_tester_id IS NOT NULL AND c.status IN ('live','paused') AND c.published_at < ?
+       AND NOT EXISTS (SELECT 1 FROM playtests p WHERE p.campaign_id = c.id)`,
+  )
+    .bind(t - REPLAY_TTL_MS)
+    .all<{ id: string; owner_id: string; escrow: number; title: string; name: string }>()
+  for (const r of idle) {
+    await env.DB.batch([
+      env.DB.prepare("UPDATE campaigns SET status = 'cancelled', escrow = 0, updated_at = ? WHERE id = ?").bind(t, r.id),
+      ...(r.escrow > 0 ? creditStmt(env, r.owner_id, r.escrow, 'escrow_refund', 'campaign', r.id) : []),
+    ])
+    await notify(env, r.owner_id, 'replay_expired', { game: r.title, tester: r.name, credits: r.escrow }, `/studio/campaigns/${r.id}`)
+  }
+
+  // 5. Stay under the global storage budget even without new uploads.
   await enforceStorageBudget(env, st, 0)
 
-  // 5. Housekeeping of auth tables.
+  // 6. Housekeeping of auth tables.
   await env.DB.batch([
     env.DB.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(t),
     env.DB.prepare('DELETE FROM oauth_states WHERE expires_at < ?').bind(t),
