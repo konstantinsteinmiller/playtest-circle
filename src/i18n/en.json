@@ -885,10 +885,10 @@
   "devices": {
     "label": "Devices to test",
     "desktop": "Desktop only",
-    "desktop_mobile": "Desktop + mobile",
+    "desktop_mobile": "Desktop + mobile view (emulated)",
     "hint": {
       "desktop": "Testers play in a normal desktop browser tab.",
-      "desktop_mobile": "Testers also check the mobile layout and touch controls."
+      "desktop_mobile": "Testers also check the phone layout in the browser's phone emulation on desktop. Not real phones: touch feel and phone performance aren't tested."
     },
     "howTo": {
       "desktop": "Play in a normal desktop browser window. No need to check phones or tablets.",
@@ -896,7 +896,7 @@
     },
     "chip": {
       "desktop": "🖥 Desktop",
-      "desktop_mobile": "🖥 + 📱 Mobile"
+      "desktop_mobile": "🖥 + 📱 Mobile view"
     }
   },
   "cheat": {
