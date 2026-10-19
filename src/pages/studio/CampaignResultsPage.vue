@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { reputationScore } from '@shared/rules'
+import { PRICE_MAX, PRICE_MIN, reputationScore } from '@shared/rules'
 import type { CampaignDetail, PlaytestRow } from '@shared/types'
 import { useErrorText } from '@/composables/useErrorText'
 import { useQuestionText } from '@/composables/useQuestionText'
@@ -31,12 +31,58 @@ const campaign = ref<CampaignDetail | null>(null)
 const rows = ref<PlaytestRow[]>([])
 const aggregates = ref<Aggregate[]>([])
 const slotsPaid = ref(0)
+interface Replay {
+  id: string
+  status: string
+  replayOf: string
+  testerId: string
+  playtestStatus: string | null
+}
+const replays = ref<Replay[]>([])
+/** The newest replay sent for each playtest of this campaign. */
+const replayByPlaytest = computed(() => {
+  const m = new Map<string, Replay>()
+  for (const r of replays.value) if (!m.has(r.replayOf)) m.set(r.replayOf, r)
+  return m
+})
+/** Still waiting on the tester: not declined, cancelled or finished. */
+const replayOpen = (r?: Replay) => !!r && ['live', 'paused'].includes(r.status) && !['submitted', 'paid', 'no_payout'].includes(r.playtestStatus ?? '')
+const replayTarget = ref<PlaytestRow | null>(null)
+const replayForm = ref({ buildLabel: '', buildUrl: '', instructions: '', price: 0 })
+const requesting = ref(false)
+
+function openReplay(p: PlaytestRow) {
+  if (!campaign.value) return
+  replayTarget.value = p
+  replayForm.value = { buildLabel: campaign.value.buildLabel, buildUrl: campaign.value.buildUrl, instructions: '', price: campaign.value.price }
+}
+
+async function requestReplay() {
+  if (!replayTarget.value) return
+  requesting.value = true
+  error.value = ''
+  try {
+    await api(`/campaigns/${id}/replays`, {
+      method: 'POST',
+      json: { playtestId: replayTarget.value.id, ...replayForm.value, price: Number(replayForm.value.price) },
+    })
+    replayTarget.value = null
+    await Promise.all([load(), session.refresh()])
+  } catch (e) {
+    error.value = errorText(e)
+  } finally {
+    requesting.value = false
+  }
+}
 const error = ref('')
 const published = route.query.published === '1'
 
 async function load() {
   try {
-    const r = await api<{ campaign: CampaignDetail; playtests: PlaytestRow[]; aggregates: Aggregate[]; slotsPaid: number }>(`/campaigns/${id}/results`)
+    const r = await api<{ campaign: CampaignDetail; playtests: PlaytestRow[]; aggregates: Aggregate[]; slotsPaid: number; replays: Replay[] }>(
+      `/campaigns/${id}/results`,
+    )
+    replays.value = r.replays
     campaign.value = r.campaign
     rows.value = r.playtests
     aggregates.value = r.aggregates
@@ -94,6 +140,10 @@ async function addSlots() {
       <div>
         <p class="text-sm font-semibold text-muted">{{ $t('results.title') }} · {{ $t(`studio.status.${campaign.status}`) }}</p>
         <h1 class="h1">{{ campaign.game.title }} · {{ campaign.buildLabel }}</h1>
+        <p v-if="campaign.replayFor" class="font-semibold text-accent-ink">
+          ↻ {{ $t('replay.for', { name: campaign.replayFor.name }) }}
+          <RouterLink v-if="campaign.replayOf" :to="`/studio/playtests/${campaign.replayOf}`" class="underline">{{ $t('replay.original') }}</RouterLink>
+        </p>
         <p class="mt-1 text-muted">
           {{ $t('results.slotsPaid', { paid: slotsPaid, total: campaign.slotsTotal }) }} · {{ $t('studio.escrow', { n: campaign.escrow }) }} ·
           {{ $t('common.credits', campaign.price) }}
@@ -145,14 +195,58 @@ async function addSlots() {
                 <span v-else-if="p.recordingExpiresAt" class="font-semibold text-warn-ink">{{ $t('results.expiresIn', { when: rel(p.recordingExpiresAt) }) }}</span>
                 <span v-else>—</span>
               </td>
-              <td class="p-3 text-right">
+              <td class="space-y-1 p-3 text-right">
                 <RouterLink v-if="p.submittedAt" :to="`/studio/playtests/${p.id}`" class="btn btn-primary min-h-9 py-1">{{ $t('results.view') }}</RouterLink>
+                <RouterLink
+                  v-if="replayOpen(replayByPlaytest.get(p.id))"
+                  :to="`/studio/campaigns/${replayByPlaytest.get(p.id)!.id}`"
+                  class="block text-sm font-semibold text-accent-ink underline"
+                  data-testid="replay-pending"
+                  >↻ {{ $t('replay.pending') }}</RouterLink
+                >
+                <button v-else-if="p.submittedAt" type="button" class="btn btn-secondary min-h-9 py-1" data-testid="request-replay" @click="openReplay(p)">
+                  ↻ {{ $t('replay.request') }}
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
+
+    <form v-if="replayTarget" class="card space-y-4 border-accent-ink p-5" data-testid="replay-form" @submit.prevent="requestReplay">
+      <h2 class="h3">↻ {{ $t('replay.formTitle', { name: replayTarget.tester.name }) }}</h2>
+      <p class="text-muted">{{ $t('replay.formLead') }}</p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label>
+          <span class="field-label">{{ $t('replay.buildLabel') }}</span>
+          <input v-model="replayForm.buildLabel" class="input" maxlength="60" required data-testid="replay-build" />
+        </label>
+        <label>
+          <span class="field-label">{{ $t('replay.buildUrl') }}</span>
+          <input v-model="replayForm.buildUrl" type="url" class="input" />
+        </label>
+      </div>
+      <label class="block">
+        <span class="field-label">{{ $t('replay.instructions') }}</span>
+        <textarea
+          v-model="replayForm.instructions"
+          class="input min-h-24"
+          maxlength="2000"
+          :placeholder="$t('replay.instructionsHint')"
+          data-testid="replay-notes"
+        />
+      </label>
+      <label class="block max-w-48">
+        <span class="field-label">{{ $t('replay.price') }}</span>
+        <input v-model.number="replayForm.price" type="number" :min="PRICE_MIN" :max="PRICE_MAX" class="input" required />
+      </label>
+      <p class="text-sm text-muted">{{ $t('replay.cost', { n: replayForm.price, balance: session.me?.credits ?? 0 }) }}</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary" :disabled="requesting" data-testid="replay-submit">{{ $t('replay.send') }}</button>
+        <button type="button" class="btn btn-ghost" @click="replayTarget = null">{{ $t('common.cancel') }}</button>
+      </div>
+    </form>
 
     <section v-if="rows.some((r) => r.submittedAt)" class="space-y-3">
       <h2 class="h2">{{ $t('results.aggregates') }}</h2>

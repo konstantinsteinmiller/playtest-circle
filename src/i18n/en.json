@@ -156,7 +156,9 @@
     "by": "by {name}",
     "reward": "Reward",
     "count": "{n} playtests | {n} playtest | {n} playtests",
-    "allGames": "Or browse all games — with or without a paid playtest →"
+    "allGames": "Or browse all games — with or without a paid playtest →",
+    "invitesTitle": "Replays requested from you",
+    "invitesLead": "A studio you tested for improved their game and wants you to check it again. Only you can see these."
   },
   "presets": {
     "playtime": {
@@ -760,6 +762,14 @@
     "game_comment": {
       "title": "New comment on {game}",
       "body": "{author} commented on {game}."
+    },
+    "replay_requested": {
+      "title": "{studio} asked you to replay {game}",
+      "body": "They improved the game since your session and want you to check it again. Pays {credits} Credits."
+    },
+    "replay_declined": {
+      "title": "Replay of {game} declined",
+      "body": "{tester} declined the replay. Your {credits} Credits are back in your wallet."
     }
   },
   "mail": {
@@ -875,7 +885,11 @@
     "social_max_reached": "You've already claimed the maximum number of posts.",
     "social_ended": "The testing-period promotion has ended.",
     "google_required": "This needs a Google sign-in. Your guest account moves over with you.",
-    "too_many_comments": "You are commenting very fast. Please wait a few minutes."
+    "too_many_comments": "You are commenting very fast. Please wait a few minutes.",
+    "unknown_playtest": "That session isn't finished yet, so you can't ask for a replay.",
+    "tester_unavailable": "This tester is no longer on Playtest Circle.",
+    "replay_already_requested": "You already sent this tester a replay that is still open.",
+    "replay_started": "You already started this replay. Quit it from the playtest page instead."
   },
   "time": {
     "inHours": "in {n} hours | in {n} hour | in {n} hours",
@@ -953,5 +967,23 @@
     "guest": "Guest",
     "dev": "Dev",
     "deleteConfirm": "Delete this comment?"
+  },
+  "replay": {
+    "request": "Request replay",
+    "pending": "Replay requested",
+    "for": "Replay for {name}",
+    "original": "See the original session",
+    "formTitle": "Ask {name} to replay",
+    "formLead": "Send a private playtest to this tester so they can check your improvements. Same questionnaire and playtime as this campaign; only they can take it.",
+    "buildLabel": "New build label",
+    "buildUrl": "Build link",
+    "instructions": "What changed?",
+    "instructionsHint": "e.g. Fixed the jump you mentioned, the second level is shorter now. Does the start feel better?",
+    "price": "Credits for this replay",
+    "cost": "{n} Credits go into escrow now (you have {balance}). You get them back if the tester declines or the replay doesn't pay out.",
+    "send": "Send replay request",
+    "invited": "{studio} asked you to replay {game} and check what they improved since your last session.",
+    "decline": "Decline replay",
+    "declineConfirm": "Decline this replay? The studio gets its Credits back."
   }
 }

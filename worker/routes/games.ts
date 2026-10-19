@@ -60,7 +60,7 @@ gameRoutes.get('/', async (c) => {
 /** Open paid playtests per game: live, visible campaigns that still have a free slot. */
 async function openCampaigns(db: D1Database, gameId?: string): Promise<CampaignCard[]> {
   const { results } = await db
-    .prepare(`SELECT ${CAMPAIGN_SELECT} ${CAMPAIGN_FROM} WHERE c.status = 'live' AND c.hidden_at IS NULL ${gameId ? 'AND c.game_id = ?' : ''} ORDER BY c.price DESC`)
+    .prepare(`SELECT ${CAMPAIGN_SELECT} ${CAMPAIGN_FROM} WHERE c.status = 'live' AND c.hidden_at IS NULL AND c.invited_tester_id IS NULL ${gameId ? 'AND c.game_id = ?' : ''} ORDER BY c.price DESC`)
     .bind(...(gameId ? [gameId] : []))
     .all<CampaignRow>()
   return results.map(mapCampaignCard).filter((x) => x.slotsLeft > 0)

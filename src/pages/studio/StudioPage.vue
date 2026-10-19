@@ -83,6 +83,7 @@ const statusClass: Record<string, string> = {
           <img v-if="c.game.coverUrl" :src="c.game.coverUrl" alt="" class="aspect-video w-32 rounded-lg object-cover" />
           <div class="min-w-48 flex-1">
             <p class="h3">{{ c.game.title }} <span class="text-base font-medium text-muted">· {{ c.buildLabel }}</span></p>
+            <p v-if="c.replayFor" class="text-sm font-semibold text-accent-ink">↻ {{ $t('replay.for', { name: c.replayFor.name }) }}</p>
             <p class="text-sm text-muted">
               {{ $t('studio.progress', { paid: c.slotsPaid, total: c.slotsTotal }) }} · {{ $t('studio.escrow', { n: c.escrow }) }} ·
               {{ $t(`presets.playtime.${c.playtimePreset}`) }}

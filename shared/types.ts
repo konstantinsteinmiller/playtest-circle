@@ -95,6 +95,8 @@ export interface CampaignCard {
   publishedAt: number | null
   game: Pick<Game, 'id' | 'title' | 'pitch' | 'tags' | 'host' | 'coverUrl' | 'hoverClipUrl'>
   owner: PublicUser
+  /** A replay is private to the one tester the studio sent it to. */
+  replayFor: { id: string; name: string } | null
 }
 
 export interface CampaignDetail extends CampaignCard {
@@ -104,6 +106,8 @@ export interface CampaignDetail extends CampaignCard {
   questions: CampaignQuestion[]
   game: Game
   escrow: number
+  /** The playtest this replay follows up (only shown to its studio). */
+  replayOf: string | null
   myPlaytestId: string | null
   myPlaytestStatus: PlaytestStatus | null
   /** Credits the viewer was paid for their playtest of this campaign (0 until paid). */

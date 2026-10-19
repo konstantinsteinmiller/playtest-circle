@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { reputationScore } from '@shared/rules'
 import type { CampaignDetail } from '@shared/types'
@@ -11,6 +12,7 @@ import { useSession } from '@/stores/session'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const session = useSession()
 const errorText = useErrorText()
 const qt = useQuestionText()
@@ -33,6 +35,22 @@ const isOwn = computed(() => c.value?.owner.id === session.me?.id)
 const myRep = computed(() => (session.me ? reputationScore(session.me.repUp, session.me.repDown) : 0))
 const visibleQuestions = computed(() => c.value?.questions.filter((q) => q.source !== 'system' || q.id === 'sys_overall') ?? [])
 const earned = computed(() => (c.value?.myPlaytestStatus === 'paid' ? c.value.myCreditsAwarded : 0))
+const invitedMe = computed(() => !!c.value?.replayFor && c.value.replayFor.id === session.me?.id)
+const declining = ref(false)
+
+async function decline() {
+  if (!c.value || !window.confirm(t('replay.declineConfirm'))) return
+  declining.value = true
+  try {
+    await api(`/campaigns/${c.value.id}/decline`, { method: 'POST' })
+    router.push('/browse')
+  } catch (e) {
+    error.value = errorText(e)
+  } finally {
+    declining.value = false
+  }
+}
+
 const blocker = computed(() => {
   const x = c.value
   if (!x) return ''
@@ -68,6 +86,12 @@ async function start() {
   <div v-else class="grid gap-8 lg:grid-cols-[1fr_380px]">
     <div class="min-w-0 space-y-8">
       <header class="space-y-3">
+        <p v-if="invitedMe" class="rounded-xl border-2 border-accent-ink p-3 font-semibold text-accent-ink" role="status" data-testid="replay-banner">
+          ↻ {{ $t('replay.invited', { studio: c.owner.name, game: c.game.title }) }}
+        </p>
+        <p v-else-if="c.replayFor && isOwn" class="rounded-xl border-2 border-accent-ink p-3 font-semibold text-accent-ink" role="status">
+          ↻ {{ $t('replay.for', { name: c.replayFor.name }) }}
+        </p>
         <p class="text-muted">
           <RouterLink :to="`/u/${c.owner.id}`" class="underline">{{ $t('browse.by', { name: c.owner.name }) }}</RouterLink>
           · {{ $t(`hosts.${c.game.host}`) }}
@@ -164,6 +188,16 @@ async function start() {
         </RouterLink>
         <button v-else type="button" class="btn btn-primary w-full text-lg" :disabled="starting" data-testid="start-playtest" @click="start">
           ▶ {{ $t('campaign.startPlaytest') }}
+        </button>
+        <button
+          v-if="invitedMe && !c.myPlaytestId && ['live', 'paused'].includes(c.status)"
+          type="button"
+          class="btn btn-ghost w-full"
+          :disabled="declining"
+          data-testid="decline-replay"
+          @click="decline"
+        >
+          {{ $t('replay.decline') }}
         </button>
         <p v-if="!session.signedIn && !blocker" class="text-sm text-muted" data-testid="guest-hint">{{ $t('campaign.guestHint') }}</p>
         <p v-if="error" class="font-semibold text-danger-ink" role="alert">{{ error }}</p>

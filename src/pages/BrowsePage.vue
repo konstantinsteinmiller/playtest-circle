@@ -27,6 +27,7 @@ watch(layout, (v) => {
 const hosts: GameHost[] = ['itch', 'steam', 'wavedash', 'crazygames', 'newgrounds', 'own', 'other']
 const filters = reactive({ q: '', sort: 'pay', preset: '', host: '', tag: '', minPrice: '' })
 const campaigns = ref<Card[]>([])
+const invites = ref<Card[]>([])
 const tags = ref<string[]>([])
 const loading = ref(true)
 const filtersOpen = ref(false)
@@ -35,8 +36,9 @@ async function load() {
   loading.value = true
   const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v !== '') as [string, string][])
   try {
-    const r = await api<{ campaigns: Card[]; tags: string[] }>(`/campaigns?${qs}`)
+    const r = await api<{ campaigns: Card[]; tags: string[]; invites: Card[] }>(`/campaigns?${qs}`)
     campaigns.value = r.campaigns
+    invites.value = r.invites
     if (!filters.tag) tags.value = r.tags
   } finally {
     loading.value = false
@@ -74,6 +76,14 @@ onMounted(load)
         </button>
       </div>
     </header>
+
+    <section v-if="invites.length" class="space-y-3" data-testid="replay-invites">
+      <h2 class="h2">↻ {{ $t('browse.invitesTitle') }}</h2>
+      <p class="text-muted">{{ $t('browse.invitesLead') }}</p>
+      <div :class="layout === 'grid' ? 'grid gap-5 sm:grid-cols-2 xl:grid-cols-3' : 'flex flex-col gap-4'">
+        <CampaignCard v-for="c in invites" :key="c.id" :campaign="c" :layout="layout" />
+      </div>
+    </section>
 
     <div class="card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
       <label class="lg:col-span-2">

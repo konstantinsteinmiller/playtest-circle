@@ -65,6 +65,7 @@ export function mapGame(r: GameRow): Game {
 export const CAMPAIGN_SELECT = `
   c.id, c.status, c.build_label, c.build_url, c.instructions, c.price, c.playtime_preset, c.devices, c.min_minutes,
   c.slots_total, c.slots_paid, c.escrow, c.min_reputation, c.questions, c.published_at, c.owner_id, c.hidden_at,
+  c.invited_tester_id, c.replay_of, iu.name AS i_name,
   (SELECT COUNT(*) FROM playtests p WHERE p.campaign_id = c.id AND p.status IN ${PENDING_STATUSES}) AS pending,
   g.id AS g_id, g.owner_id AS g_owner_id, g.title AS g_title, g.pitch AS g_pitch, g.description AS g_description,
   g.tags AS g_tags, g.play_url AS g_play_url, g.host AS g_host, g.access_notes AS g_access_notes,
@@ -72,7 +73,8 @@ export const CAMPAIGN_SELECT = `
   g.screenshots AS g_screenshots, g.created_at AS g_created_at,
   u.name AS u_name, u.avatar_url AS u_avatar_url, u.rep_up AS u_rep_up, u.rep_down AS u_rep_down`
 
-export const CAMPAIGN_FROM = `FROM campaigns c JOIN games g ON g.id = c.game_id JOIN users u ON u.id = c.owner_id`
+export const CAMPAIGN_FROM = `FROM campaigns c JOIN games g ON g.id = c.game_id JOIN users u ON u.id = c.owner_id
+  LEFT JOIN users iu ON iu.id = c.invited_tester_id`
 
 export interface CampaignRow {
   id: string
@@ -92,6 +94,10 @@ export interface CampaignRow {
   published_at: number | null
   owner_id: string
   hidden_at: number | null
+  /** Set on a replay: the one tester it was sent to, and the playtest it follows up. */
+  invited_tester_id: string | null
+  replay_of: string | null
+  i_name: string | null
   pending: number
   g_id: string
   g_owner_id: string
@@ -149,6 +155,7 @@ export function mapCampaignCard(r: CampaignRow): CampaignCard {
     publishedAt: r.published_at,
     game: { id: g.id, title: g.title, pitch: g.pitch, tags: g.tags, host: g.host, coverUrl: g.coverUrl, hoverClipUrl: g.hoverClipUrl },
     owner: { id: r.owner_id, name: r.u_name, avatarUrl: r.u_avatar_url, repUp: r.u_rep_up, repDown: r.u_rep_down },
+    replayFor: r.invited_tester_id ? { id: r.invited_tester_id, name: r.i_name ?? '' } : null,
   }
 }
 
@@ -165,6 +172,7 @@ export function mapCampaignDetail(
     questions: parseJson<CampaignQuestion[]>(r.questions, []),
     game,
     escrow: r.escrow,
+    replayOf: r.replay_of,
     myPlaytestId: mine?.id ?? null,
     myPlaytestStatus: mine?.status ?? null,
     myCreditsAwarded: mine?.credits_awarded ?? 0,
@@ -333,12 +341,20 @@ export function creditStmt(env: Env, userId: string, delta: number, reason: stri
 
 /**
  * A slot freed by a playtest that will never pay out. On a live campaign it simply goes back
- * to the pool; on a cancelled one its escrow returns to the owner.
+ * to the pool; on a cancelled one its escrow returns to the owner. A replay has no one else to
+ * give the slot to, so it ends and its whole escrow returns.
  */
 export async function releaseSlot(env: Env, campaignId: string) {
-  const c = await env.DB.prepare('SELECT owner_id, status, price, escrow FROM campaigns WHERE id = ?')
+  const c = await env.DB.prepare('SELECT owner_id, status, price, escrow, invited_tester_id FROM campaigns WHERE id = ?')
     .bind(campaignId)
-    .first<{ owner_id: string; status: CampaignStatus; price: number; escrow: number }>()
+    .first<{ owner_id: string; status: CampaignStatus; price: number; escrow: number; invited_tester_id: string | null }>()
+  if (c?.invited_tester_id && (c.status === 'live' || c.status === 'paused')) {
+    await env.DB.batch([
+      env.DB.prepare("UPDATE campaigns SET status = 'cancelled', escrow = 0, updated_at = ? WHERE id = ?").bind(now(), campaignId),
+      ...(c.escrow > 0 ? creditStmt(env, c.owner_id, c.escrow, 'escrow_refund', 'campaign', campaignId) : []),
+    ])
+    return
+  }
   if (!c || c.status !== 'cancelled' || c.escrow < c.price) return
   await env.DB.batch([
     env.DB.prepare('UPDATE campaigns SET escrow = escrow - ? WHERE id = ?').bind(c.price, campaignId),

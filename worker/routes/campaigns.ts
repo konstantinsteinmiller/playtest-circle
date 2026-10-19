@@ -25,6 +25,7 @@ import {
 } from '../domain'
 import type { AppEnv } from '../env'
 import { fail, httpUrl, newId, now, parseJson, str } from '../lib'
+import { notify } from '../notify'
 import { ownerRecordingBytes } from './me'
 
 export const campaignRoutes = new Hono<AppEnv>()
@@ -42,6 +43,7 @@ campaignRoutes.get('/', async (c) => {
   const where = [
     "c.status = 'live'",
     'c.hidden_at IS NULL',
+    'c.invited_tester_id IS NULL',
     'c.owner_id != ?1',
     'NOT EXISTS (SELECT 1 FROM playtests mp WHERE mp.campaign_id = c.id AND mp.tester_id = ?1)',
   ]
@@ -66,7 +68,20 @@ campaignRoutes.get('/', async (c) => {
     .all<CampaignRow>()
   const cards = results.map(mapCampaignCard).filter((x) => x.slotsLeft > 0)
   const tags = [...new Set(cards.flatMap((x) => x.game.tags))].sort()
-  return c.json({ campaigns: cards, tags })
+  // Replays a studio sent to this viewer and they haven't finished yet.
+  const invites = viewer
+    ? (
+        await c.env.DB.prepare(
+          `SELECT ${CAMPAIGN_SELECT} ${CAMPAIGN_FROM}
+           WHERE c.invited_tester_id = ? AND c.status = 'live' AND c.hidden_at IS NULL
+             AND NOT EXISTS (SELECT 1 FROM playtests mp WHERE mp.campaign_id = c.id AND mp.submitted_at IS NOT NULL)
+           ORDER BY c.published_at DESC`,
+        )
+          .bind(viewer.id)
+          .all<CampaignRow>()
+      ).results.map(mapCampaignCard)
+    : []
+  return c.json({ campaigns: cards, tags, invites })
 })
 
 campaignRoutes.get('/mine', async (c) => {
@@ -87,6 +102,7 @@ campaignRoutes.get('/:id', async (c) => {
   const u = c.get('user')
   const r = await loadCampaign(c.env, c.req.param('id')!)
   if (!r || (r.hidden_at && r.owner_id !== u?.id && u?.role !== 'admin')) fail(404, 'not_found')
+  if (r.invited_tester_id && ![r.owner_id, r.invited_tester_id].includes(u?.id ?? '') && u?.role !== 'admin') fail(404, 'not_found')
   const mine = u
     ? await c.env.DB.prepare('SELECT id, status, credits_awarded FROM playtests WHERE campaign_id = ? AND tester_id = ?')
         .bind(r.id, u.id)
@@ -245,7 +261,93 @@ campaignRoutes.get('/:id/results', async (c) => {
       texts: list.filter((a) => a.text.trim()).map((a) => ({ playtestId: a.playtest_id, tester: a.tester, text: a.text })),
     }
   })
-  return c.json({ campaign: mapCampaignDetail(r, null), playtests: rows, aggregates, slotsPaid: r.slots_paid })
+  const { results: replays } = await c.env.DB.prepare(
+    `SELECT c.id, c.status, c.replay_of, c.invited_tester_id,
+       (SELECT p.status FROM playtests p WHERE p.campaign_id = c.id) AS playtest_status
+     FROM campaigns c WHERE c.replay_of IN (SELECT id FROM playtests WHERE campaign_id = ?) ORDER BY c.created_at DESC`,
+  )
+    .bind(r.id)
+    .all<{ id: string; status: string; replay_of: string; invited_tester_id: string; playtest_status: string | null }>()
+  return c.json({
+    campaign: mapCampaignDetail(r, null),
+    playtests: rows,
+    aggregates,
+    slotsPaid: r.slots_paid,
+    replays: replays.map((x) => ({ id: x.id, status: x.status, replayOf: x.replay_of, testerId: x.invited_tester_id, playtestStatus: x.playtest_status })),
+  })
+})
+
+/**
+ * Replay: the studio asks one tester of an earlier playtest to play again and check the improvements.
+ * A private one-slot campaign with the same questionnaire, paid into escrow like any campaign.
+ */
+campaignRoutes.post('/:id/replays', async (c) => {
+  const { u, r } = await ownCampaign(c)
+  const b = (await c.req.json()) as { playtestId?: string; buildLabel?: string; buildUrl?: string; instructions?: string; price?: number }
+  const p = await c.env.DB.prepare('SELECT id, tester_id, submitted_at FROM playtests WHERE id = ? AND campaign_id = ?')
+    .bind(b.playtestId ?? '', r.id)
+    .first<{ id: string; tester_id: string; submitted_at: number | null }>()
+  if (!p || !p.submitted_at) fail(422, 'unknown_playtest')
+  const tester = await c.env.DB.prepare('SELECT id FROM users WHERE id = ? AND deleted_at IS NULL AND banned_at IS NULL').bind(p.tester_id).first()
+  if (!tester) fail(409, 'tester_unavailable')
+  const open = await c.env.DB.prepare(
+    "SELECT id FROM campaigns WHERE replay_of = ? AND status IN ('live','paused') AND NOT EXISTS (SELECT 1 FROM playtests x WHERE x.campaign_id = campaigns.id AND x.submitted_at IS NOT NULL)",
+  )
+    .bind(p.id)
+    .first()
+  if (open) fail(409, 'replay_already_requested')
+  const price = Number(b.price ?? r.price)
+  if (!validatePrice(price)) fail(422, 'invalid_price')
+  if ((await ownerRecordingBytes(c.env.DB, u.id)) > RECORDING_QUOTA_BYTES) fail(409, 'recording_quota_exceeded')
+  if (u.credits < price) fail(409, 'insufficient_credits')
+
+  const id = newId()
+  const t = now()
+  try {
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        `INSERT INTO campaigns (id, game_id, owner_id, build_label, build_url, instructions, playtime_preset, devices, min_minutes,
+          slots_total, price, escrow, min_reputation, questions, status, published_at, created_at, updated_at, invited_tester_id, replay_of)
+         SELECT ?, game_id, owner_id, ?, ?, ?, playtime_preset, devices, min_minutes, 1, ?, ?, 0, questions, 'live', ?, ?, ?, ?, ?
+         FROM campaigns WHERE id = ?`,
+      ).bind(
+        id,
+        str(b.buildLabel || r.build_label, 60, 1),
+        b.buildUrl ? httpUrl(b.buildUrl) : r.build_url,
+        str(b.instructions ?? '', 2000),
+        price,
+        price,
+        t,
+        t,
+        t,
+        p.tester_id,
+        p.id,
+        r.id,
+      ),
+      ...creditStmt(c.env, u.id, -price, 'campaign_escrow', 'campaign', id),
+    ])
+  } catch (e) {
+    if (String(e).includes('CHECK')) fail(409, 'insufficient_credits')
+    throw e
+  }
+  await notify(c.env, p.tester_id, 'replay_requested', { game: r.g_title, studio: r.u_name, credits: price }, `/c/${id}`)
+  return c.json({ id })
+})
+
+/** The invited tester turns a replay down: the studio gets its escrow back. */
+campaignRoutes.post('/:id/decline', async (c) => {
+  const u = requireUser(c)
+  const r = await loadCampaign(c.env, c.req.param('id')!)
+  if (!r || r.invited_tester_id !== u.id) fail(404, 'not_found')
+  if (r.status !== 'live' && r.status !== 'paused') fail(409, 'not_active')
+  const started = await c.env.DB.prepare('SELECT id FROM playtests WHERE campaign_id = ?').bind(r.id).first()
+  if (started) fail(409, 'replay_started')
+  await c.env.DB.batch([
+    c.env.DB.prepare("UPDATE campaigns SET status = 'cancelled', escrow = 0, updated_at = ? WHERE id = ?").bind(now(), r.id),
+    ...(r.escrow > 0 ? creditStmt(c.env, r.owner_id, r.escrow, 'escrow_refund', 'campaign', r.id) : []),
+  ])
+  await notify(c.env, r.owner_id, 'replay_declined', { game: r.g_title, tester: u.name, credits: r.escrow }, `/studio/campaigns/${r.id}`)
+  return c.json({ ok: true })
 })
 
 /** Reserve a slot. One atomic INSERT…SELECT, so two testers can never take the last slot together. */
@@ -254,6 +356,7 @@ campaignRoutes.post('/:id/start', async (c) => {
   const r = await loadCampaign(c.env, c.req.param('id')!)
   if (!r || r.status !== 'live' || r.hidden_at) fail(404, 'not_available')
   if (r.owner_id === u.id) fail(409, 'own_campaign')
+  if (r.invited_tester_id && r.invited_tester_id !== u.id) fail(404, 'not_available')
   const me = await c.env.DB.prepare('SELECT rep_up, rep_down FROM users WHERE id = ?').bind(u.id).first<{ rep_up: number; rep_down: number }>()
   if (r.min_reputation > 0 && reputationScore(me!.rep_up, me!.rep_down) < r.min_reputation) fail(403, 'reputation_too_low')
   const existing = await c.env.DB.prepare('SELECT id FROM playtests WHERE campaign_id = ? AND tester_id = ?').bind(r.id, u.id).first<{ id: string }>()
