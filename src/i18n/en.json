@@ -712,8 +712,8 @@
   "settings": {
     "title": "Settings",
     "notifications": "Notifications",
-    "emailOptIn": "Email me when a playtest of my game is finished",
-    "emailHint": "Sent to {email}. Turn it off to check results manually here.",
+    "emailOptIn": "Email me when a playtest of my game is finished or someone comments on it",
+    "emailHint": "Sent to {email}. Comments are emailed at most once a day — the first new one, in full. Turn it off to check everything here instead.",
     "campaignAlerts": "Email me about new playtests I can earn Credits from",
     "campaignAlertsHint": "At most one email a day. After an email, the next one only comes once you’ve been back on Playtest Circle.",
     "campaignAlertsGuest": "Sign in with Google to get these emails — guest accounts have no email address.",
@@ -999,5 +999,11 @@
     "body": "A dev just posted {game} for testing. It pays {credits} Credits per finished test — grab a slot before they’re gone.",
     "open": "See the playtest",
     "footer": "You get this because new-playtest emails are on in your Playtest Circle settings (at most one a day). Turn them off there at any time."
+  },
+  "commentMail": {
+    "title": "New comment on {game}",
+    "intro": "{author} commented on your game {game}:",
+    "open": "Reply on Playtest Circle",
+    "footer": "You get at most one comment email a day: the first new comment. The rest wait for you in the app. Turn emails off in your Playtest Circle settings."
   }
 }

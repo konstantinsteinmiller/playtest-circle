@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { MAX_COMMENT_LENGTH } from '@shared/rules'
@@ -29,7 +29,14 @@ async function load() {
     error.value = errorText(e)
   }
 }
-onMounted(load)
+onMounted(async () => {
+  await load()
+  // A link from a comment email lands on that comment.
+  if (route.hash.startsWith('#comment-')) {
+    await nextTick()
+    document.getElementById(route.hash.slice(1))?.scrollIntoView({ block: 'center' })
+  }
+})
 
 const game = computed(() => page.value?.game)
 const trailer = computed(() => embedUrl(game.value?.trailerUrl ?? null))
@@ -132,7 +139,14 @@ const when = (ts: number) => new Date(ts).toLocaleString()
         </form>
         <p v-if="!page.comments.length" class="text-muted">{{ $t('gamePage.noComments') }}</p>
         <ul class="space-y-3">
-          <li v-for="c in page.comments" :key="c.id" class="card space-y-2 p-4" data-testid="comment">
+          <li
+            v-for="c in page.comments"
+            :id="`comment-${c.id}`"
+            :key="c.id"
+            class="card scroll-mt-24 space-y-2 p-4"
+            :class="{ 'border-2 border-primary': route.hash === `#comment-${c.id}` }"
+            data-testid="comment"
+          >
             <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
               <p>
                 <RouterLink :to="`/u/${c.author.id}`" class="font-semibold underline">{{ c.author.name }}</RouterLink>

@@ -1,4 +1,4 @@
-import { CAMPAIGN_ALERT_MIN_GAP_MS } from '../shared/rules'
+import { CAMPAIGN_ALERT_MIN_GAP_MS, COMMENT_MAIL_GAP_MS } from '../shared/rules'
 import type { Env } from './env'
 import { tr } from './i18n'
 import { newId, now } from './lib'
@@ -116,4 +116,45 @@ export async function alertNewCampaign(env: Env, campaignId: string): Promise<vo
     }),
   )
   for (const r of await Promise.allSettled(jobs)) if (r.status === 'rejected') console.error('[campaign-alert]', r.reason)
+}
+
+/**
+ * The first new comment on any of a dev's games in a day is emailed to them in full, with a link to it.
+ * Later comments that day only show up in the app. Follows the owner's email setting; guests have no email.
+ */
+export async function mailComment(
+  env: Env,
+  ownerId: string,
+  c: { id: string; gameId: string; game: string; author: string; text: string },
+): Promise<boolean> {
+  const t = now()
+  // Claim today's email atomically, so two comments at once can't both send one.
+  const owner = await env.DB.prepare(
+    `UPDATE users SET comment_mail_at = ?1
+     WHERE id = ?2 AND email_opt_in = 1 AND email != '' AND guest = 0 AND deleted_at IS NULL
+       AND (comment_mail_at IS NULL OR comment_mail_at < ?3)
+     RETURNING email`,
+  )
+    .bind(t, ownerId, t - COMMENT_MAIL_GAP_MS)
+    .first<{ email: string }>()
+  if (!owner) return false
+  const params = { game: c.game, author: c.author }
+  const title = tr('commentMail.title', params)
+  const intro = tr('commentMail.intro', params)
+  const footer = tr('commentMail.footer')
+  const url = new URL(`/g/${c.gameId}#comment-${c.id}`, env.APP_URL).toString()
+  const quote = esc(c.text).replace(/\n/g, '<br>')
+  await sendMail(env, {
+    to: owner.email,
+    subject: title,
+    text: `${intro}\n\n"${c.text}"\n\n— ${c.author}\n\n${tr('commentMail.open')}: ${url}\n\n${footer}`,
+    html: `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:560px;color:#0B0B10">
+<h2 style="margin:0 0 12px;font-size:20px">${esc(title)}</h2>
+<p style="margin:0 0 16px">${esc(intro)}</p>
+<blockquote style="margin:0 0 8px;padding:12px 16px;border-left:4px solid #C6FF3D;background:#F4F4F6;border-radius:8px;font-size:15px;line-height:1.5">${quote}</blockquote>
+<p style="margin:0 0 20px;color:#555;font-size:14px">— ${esc(c.author)}</p>
+<p><a href="${esc(url)}" style="display:inline-block;background:#C6FF3D;color:#0B0B10;padding:10px 18px;border-radius:10px;font-weight:700;text-decoration:none">${esc(tr('commentMail.open'))}</a></p>
+<p style="color:#555;font-size:12px">${esc(footer)}</p></div>`,
+  })
+  return true
 }

@@ -5,7 +5,7 @@ import { requireUser } from '../auth/session'
 import { CAMPAIGN_FROM, CAMPAIGN_SELECT, mapCampaignCard, mapGame, type CampaignRow, type GameRow } from '../domain'
 import type { AppEnv } from '../env'
 import { fail, httpUrl, newId, now, str } from '../lib'
-import { notify } from '../notify'
+import { mailComment, notify } from '../notify'
 import { storage } from '../storage'
 
 export const gameRoutes = new Hono<AppEnv>()
@@ -153,7 +153,10 @@ gameRoutes.post('/:id/comments', async (c) => {
     .run()
   if (game.owner_id !== u.id) {
     c.executionCtx.waitUntil(
-      notify(c.env, game.owner_id, 'game_comment', { game: game.title, author: u.name }, `/g/${game.id}`).catch((e) => console.error('[notify]', e)),
+      Promise.all([
+        notify(c.env, game.owner_id, 'game_comment', { game: game.title, author: u.name }, `/g/${game.id}#comment-${id}`),
+        mailComment(c.env, game.owner_id, { id, gameId: game.id, game: game.title, author: u.name, text }),
+      ]).catch((e) => console.error('[notify]', e)),
     )
   }
   return c.json({ id })

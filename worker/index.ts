@@ -57,7 +57,7 @@ app.post('/dev/expire-and-cron', async (c) => {
   return c.json({ ok: true })
 })
 
-/** e2e only (DEV_LOGIN=1): a user's new-campaign alert state, and optionally pretend the last alert was a day ago. */
+/** e2e only (DEV_LOGIN=1): a user's alert-email state (new campaigns, comments), and optionally pretend the last alert was a day ago. */
 app.post('/dev/campaign-alert', async (c) => {
   if (c.env.DEV_LOGIN !== '1') return c.json({ error: 'not_found' }, 404)
   const { email, ageDay } = (await c.req.json()) as { email: string; ageDay?: boolean }
@@ -66,10 +66,10 @@ app.post('/dev/campaign-alert', async (c) => {
       .bind(email)
       .run()
   }
-  const row = await c.env.DB.prepare('SELECT campaign_alert_at, last_seen_at FROM users WHERE email = ?')
+  const row = await c.env.DB.prepare('SELECT campaign_alert_at, last_seen_at, comment_mail_at FROM users WHERE email = ?')
     .bind(email)
-    .first<{ campaign_alert_at: number | null; last_seen_at: number | null }>()
-  return c.json({ alertAt: row?.campaign_alert_at ?? null, seenAt: row?.last_seen_at ?? null })
+    .first<{ campaign_alert_at: number | null; last_seen_at: number | null; comment_mail_at: number | null }>()
+  return c.json({ alertAt: row?.campaign_alert_at ?? null, seenAt: row?.last_seen_at ?? null, commentMailAt: row?.comment_mail_at ?? null })
 })
 
 app.notFound((c) => c.json({ error: 'not_found' }, 404))
