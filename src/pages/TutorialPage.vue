@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import GoogleIcon from '@/components/GoogleIcon.vue'
 import OnboardingVideo from '@/components/OnboardingVideo.vue'
+import UserCounter from '@/components/UserCounter.vue'
 import { onMounted } from 'vue'
 import { WELCOME_GRANT } from '@shared/rules'
 import { api } from '@/lib/api'
@@ -27,6 +28,7 @@ onMounted(async () => {
     <header class="space-y-2">
       <h1 class="h1">{{ $t('tutorial.title') }}</h1>
       <p class="text-lg text-muted">{{ $t('tutorial.lead') }}</p>
+      <UserCounter />
     </header>
     <OnboardingVideo />
     <ol class="space-y-4">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UserCounter from '@/components/UserCounter.vue'
 import OnboardingVideo from '@/components/OnboardingVideo.vue'
 import GoogleIcon from '@/components/GoogleIcon.vue'
 import { computed, ref } from 'vue'
@@ -54,6 +55,7 @@ const steps = [
         <p class="chip border-primary-ink font-semibold text-primary-ink">{{ $t('brand.tagline') }}</p>
         <h1 class="font-display text-4xl leading-tight font-bold tracking-tight sm:text-6xl">{{ $t('landing.title') }}</h1>
         <p class="max-w-2xl text-lg text-muted">{{ $t('landing.lead') }}</p>
+        <UserCounter />
         <p v-if="loginError" class="rounded-xl border-2 border-danger p-3 font-semibold text-danger-ink" role="alert">
           {{ loginError === 'banned' ? $t('landing.banned') : $t('landing.loginError', { reason: loginError }) }}
         </p>

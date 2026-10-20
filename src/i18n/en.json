@@ -1024,5 +1024,9 @@
     "intro": "{author} commented on your game {game}:",
     "open": "Reply on Playtest Circle",
     "footer": "You get at most one comment email a day: the first new comment. The rest wait for you in the app. Turn emails off in your Playtest Circle settings."
+  },
+  "stats": {
+    "active": "{n} members | {n} member | {n} members",
+    "online": "{n} online in the last hour | {n} online in the last hour | {n} online in the last hour"
   }
 }

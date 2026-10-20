@@ -10,6 +10,8 @@ import { gameRoutes } from './routes/games'
 import { clawBackCheats, meRoutes } from './routes/me'
 import { playtestRoutes } from './routes/playtests'
 import { storageRoutes } from './routes/storage'
+import { ONLINE_WINDOW_MS } from '../shared/rules'
+import { now } from './lib'
 
 export const app = new Hono<AppEnv>().basePath('/api')
 
@@ -31,6 +33,24 @@ app.get('/config', (c) =>
     storageOrigin: c.env.STORAGE_DRIVER === 'b2' ? new URL(c.env.B2_ENDPOINT).origin : null,
   }),
 )
+
+/**
+ * Public counter: people who did something (added a game, commented or took a playtest), guests included,
+ * and how many of them had the app open in the last hour.
+ */
+app.get('/stats', async (c) => {
+  const r = await c.env.DB.prepare(
+    `SELECT COUNT(*) AS active, COALESCE(SUM(u.last_seen_at > ?), 0) AS online FROM users u
+     WHERE u.deleted_at IS NULL AND u.banned_at IS NULL AND (
+       EXISTS (SELECT 1 FROM games g WHERE g.owner_id = u.id)
+       OR EXISTS (SELECT 1 FROM game_comments gc WHERE gc.user_id = u.id AND gc.deleted_at IS NULL)
+       OR EXISTS (SELECT 1 FROM playtests p WHERE p.tester_id = u.id))`,
+  )
+    .bind(now() - ONLINE_WINDOW_MS)
+    .first<{ active: number; online: number }>()
+  c.header('cache-control', 'public, max-age=60')
+  return c.json({ active: r?.active ?? 0, online: r?.online ?? 0 })
+})
 
 app.route('/auth', authRoutes)
 app.route('/', meRoutes)

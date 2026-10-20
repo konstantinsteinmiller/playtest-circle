@@ -254,3 +254,7 @@ export function normalizeSocialUrl(raw: string): string | null {
   for (const k of [...u.searchParams.keys()]) if (/^(utm_|ref|s$|t$|si$|igsh)/.test(k)) u.searchParams.delete(k)
   return `https://${host}${u.pathname.replace(/\/$/, '')}${u.search}`
 }
+
+/** "Online" on the public counter: had the app open within this window. The open tab pings every few minutes. */
+export const ONLINE_WINDOW_MS = 3_600_000
+export const PRESENCE_PING_MS = 5 * 60_000

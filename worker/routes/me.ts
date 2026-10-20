@@ -27,7 +27,7 @@ meRoutes.get('/me', async (c) => {
   if (now() >= CHEAT.until) await clawBackCheats(c.env.DB, s.id)
   const u = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(s.id).first<Record<string, unknown>>()
   if (!u) return c.json({ user: null })
-  // The app loads /me on every visit: that's what re-arms the new-campaign alert email.
+  // The app loads /me on every visit (and an open tab pings it, see PRESENCE_PING_MS): that's what re-arms the new-campaign alert email.
   await c.env.DB.prepare('UPDATE users SET last_seen_at = ? WHERE id = ?').bind(now(), s.id).run()
   const me: Me = {
     id: u.id as string,

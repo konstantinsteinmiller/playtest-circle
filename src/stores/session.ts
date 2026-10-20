@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { PRESENCE_PING_MS } from '@shared/rules'
 import type { Me } from '@shared/types'
 import { api } from '@/lib/api'
 
@@ -41,6 +42,15 @@ export const useSession = defineStore('session', () => {
     await refresh()
   }
 
+  /** An open, visible tab re-loads /me now and then, which keeps the user counted as online. */
+  function keepPresence() {
+    const ping = () => {
+      if (me.value && document.visibilityState === 'visible') api('/me').catch(() => {})
+    }
+    setInterval(ping, PRESENCE_PING_MS)
+    document.addEventListener('visibilitychange', ping)
+  }
+
   function loginUrl(returnTo = '/browse') {
     return `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`
   }
@@ -57,5 +67,6 @@ export const useSession = defineStore('session', () => {
     ensureGuest,
     logout,
     loginUrl,
+    keepPresence,
   }
 })
