@@ -149,7 +149,7 @@ async function start() {
       </section>
     </div>
 
-    <aside class="space-y-4 lg:sticky lg:top-24 lg:self-start">
+    <aside class="space-y-4 max-lg:pb-48">
       <div class="card space-y-5 p-6" :class="{ 'border-2 border-primary': earned }" data-testid="reward-card">
         <p v-if="earned" class="text-lg font-semibold text-primary-ink" data-testid="earned">✓ {{ $t('campaign.earned', { n: earned }, earned) }}</p>
         <div v-else>
@@ -182,7 +182,12 @@ async function start() {
           <p class="mt-1 whitespace-pre-line text-muted">{{ c.game.accessNotes }}</p>
         </div>
         <p class="rounded-xl bg-surface-2 p-3 text-sm">{{ $t('campaign.beforeYouStart') }}</p>
-        <p v-if="blocker" class="font-semibold text-warn-ink">{{ $t(blocker, { n: c.minReputation }) }}</p>
+        <!-- The card can be taller than the screen (long instructions): keep the action pinned to the bottom of the viewport. -->
+        <div
+          class="z-30 space-y-3 border-t border-line bg-surface p-4 shadow-[0_-8px_24px_rgba(0,0,0,0.25)] max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 lg:sticky lg:bottom-0 lg:-mx-6 lg:-mb-6 lg:rounded-b-[inherit] lg:px-6"
+          data-testid="start-footer"
+        >
+          <p v-if="blocker" class="font-semibold text-warn-ink">{{ $t(blocker, { n: c.minReputation }) }}</p>
         <RouterLink v-else-if="c.myPlaytestId" :to="`/play/${c.myPlaytestId}`" class="btn btn-primary w-full text-lg">
           {{ $t('campaign.continuePlaytest') }}
         </RouterLink>
@@ -200,7 +205,8 @@ async function start() {
           {{ $t('replay.decline') }}
         </button>
         <p v-if="!session.signedIn && !blocker" class="text-sm text-muted" data-testid="guest-hint">{{ $t('campaign.guestHint') }}</p>
-        <p v-if="error" class="font-semibold text-danger-ink" role="alert">{{ error }}</p>
+          <p v-if="error" class="font-semibold text-danger-ink" role="alert">{{ error }}</p>
+        </div>
       </div>
     </aside>
 
