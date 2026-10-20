@@ -68,6 +68,7 @@ async function openCampaigns(db: D1Database, gameId?: string): Promise<CampaignC
 
 /** Public catalog of every game, with or without a paid playtest. Needs no account. */
 gameRoutes.get('/catalog', async (c) => {
+  const viewer = c.get('user')
   const q = (c.req.query('q') ?? '').toLowerCase().replace(/[%_]/g, '').trim()
   const { results } = await c.env.DB.prepare(
     `SELECT g.*, u.name AS u_name,
@@ -79,6 +80,9 @@ gameRoutes.get('/catalog', async (c) => {
   )
     .bind(...(q ? [`%${q}%`] : []))
     .all<GameRow & { u_name: string; comment_count: number }>()
+  const favs = viewer
+    ? new Set((await c.env.DB.prepare('SELECT game_id FROM game_favorites WHERE user_id = ?').bind(viewer.id).all<{ game_id: string }>()).results.map((f) => f.game_id))
+    : new Set<string>()
   const open = await openCampaigns(c.env.DB)
   const games: GameCard[] = results.map((r) => {
     const mine = open.filter((x) => x.game.id === r.id)
@@ -95,11 +99,27 @@ gameRoutes.get('/catalog', async (c) => {
       openPlaytests: mine.length,
       topPrice: Math.max(0, ...mine.map((x) => x.price)),
       comments: r.comment_count,
+      favorite: favs.has(r.id),
     }
   })
   // Games with a paid playtest first, the rest by last update.
   games.sort((a, b) => Number(b.openPlaytests > 0) - Number(a.openPlaytests > 0))
   return c.json({ games })
+})
+
+/** Hearts or un-hearts a game for the signed-in user (guests too). */
+gameRoutes.put('/:id/favorite', async (c) => {
+  const u = requireUser(c)
+  const on = !!(await c.req.json<{ on?: boolean }>().catch(() => ({}) as { on?: boolean })).on
+  const id = c.req.param('id')
+  if (on) {
+    const game = await c.env.DB.prepare('SELECT id FROM games WHERE id = ? AND archived_at IS NULL').bind(id).first()
+    if (!game) fail(404, 'not_found')
+    await c.env.DB.prepare('INSERT OR IGNORE INTO game_favorites (user_id, game_id, created_at) VALUES (?, ?, ?)').bind(u.id, id, now()).run()
+  } else {
+    await c.env.DB.prepare('DELETE FROM game_favorites WHERE user_id = ? AND game_id = ?').bind(u.id, id).run()
+  }
+  return c.json({ favorite: on })
 })
 
 /** Public game page: details, open paid playtests and comments. */

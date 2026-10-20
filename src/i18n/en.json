@@ -957,7 +957,13 @@
     "count": "{n} games | {n} game | {n} games",
     "empty": "No games match.",
     "paidPlaytest": "Paid playtest · up to {n}",
-    "freePlay": "Free play"
+    "freePlay": "Free play",
+    "tabsLabel": "Show games",
+    "tabAll": "All games",
+    "tabFavorites": "♥ Favorites ({n})",
+    "noFavorites": "No favorites yet. Tap the heart on a game to keep it here.",
+    "favorite": "Add {title} to favorites",
+    "unfavorite": "Remove {title} from favorites"
   },
   "gamePage": {
     "freePlayTitle": "Play freely",

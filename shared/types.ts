@@ -191,6 +191,8 @@ export interface GameCard {
   /** Best reward among those campaigns, 0 when there is none. */
   topPrice: number
   comments: number
+  /** The viewer hearted this game; always false when signed out. */
+  favorite: boolean
 }
 
 export interface GameComment {

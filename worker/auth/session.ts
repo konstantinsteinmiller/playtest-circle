@@ -109,12 +109,14 @@ export async function createGuest(env: Env): Promise<string> {
   return id
 }
 
-/** Moves a guest's playtests, Credits, reputation and comments into an existing account and retires the guest. */
+/** Moves a guest's playtests, Credits, reputation, comments and favorites into an existing account and retires the guest. */
 async function mergeGuest(env: Env, guestId: string, targetId: string) {
   await env.DB.batch([
     // A campaign both accounts already tested stays with the guest: one playtest per tester and campaign.
     env.DB.prepare('UPDATE OR IGNORE playtests SET tester_id = ? WHERE tester_id = ?').bind(targetId, guestId),
     env.DB.prepare('UPDATE game_comments SET user_id = ? WHERE user_id = ?').bind(targetId, guestId),
+    env.DB.prepare('UPDATE OR IGNORE game_favorites SET user_id = ? WHERE user_id = ?').bind(targetId, guestId),
+    env.DB.prepare('DELETE FROM game_favorites WHERE user_id = ?').bind(guestId),
     env.DB.prepare('UPDATE notifications SET user_id = ? WHERE user_id = ?').bind(targetId, guestId),
     env.DB.prepare('UPDATE credit_ledger SET user_id = ? WHERE user_id = ?').bind(targetId, guestId),
     // Earned Credits move over; the guest's start grant doesn't, since the account already had its welcome grant.
