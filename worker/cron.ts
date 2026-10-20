@@ -1,4 +1,4 @@
-import { EXPIRY_WARNING_MS, REPLAY_TTL_MS } from '../shared/rules'
+import { EXPIRY_WARNING_MS, GUEST_IP_LIMIT, REPLAY_TTL_MS } from '../shared/rules'
 import { creditStmt, deleteRecording, enforceStorageBudget, recordingExpiry, releaseSlot, salvageUpload, type PlaytestDbRow } from './domain'
 import type { Env } from './env'
 import { now } from './lib'
@@ -87,5 +87,6 @@ export async function runCron(env: Env) {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(t),
     env.DB.prepare('DELETE FROM oauth_states WHERE expires_at < ?').bind(t),
+    env.DB.prepare('DELETE FROM guest_ips WHERE created_at < ?').bind(t - GUEST_IP_LIMIT.windowMs),
   ])
 }

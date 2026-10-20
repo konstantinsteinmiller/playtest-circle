@@ -1,6 +1,7 @@
 import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../env'
-import { b64url, b64urlDecode, fail, now, randomToken } from '../lib'
+import { GUEST_IP_LIMIT } from '../../shared/rules'
+import { b64url, b64urlDecode, fail, now, randomToken, sha256 } from '../lib'
 import { createGuest, endSession, startSession, upsertUser } from './session'
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
@@ -22,6 +23,19 @@ const guestOf = (c: Context<AppEnv>) => {
 /** Browse and test without Google: a guest account that lives in this browser's session cookie. */
 authRoutes.post('/guest', async (c) => {
   if (c.get('user')) return c.json({ ok: true })
+  // Cloudflare sets this header and overwrites any the client sends; local dev has none and isn't limited.
+  const ip = c.req.header('cf-connecting-ip')
+  if (ip) {
+    const t = now()
+    const hash = await sha256(`${c.env.SESSION_SECRET}:guest-ip:${ip}`)
+    const res = await c.env.DB.prepare(
+      `INSERT INTO guest_ips (ip_hash, created_at)
+       SELECT ?1, ?2 WHERE (SELECT COUNT(*) FROM guest_ips WHERE ip_hash = ?1 AND created_at > ?3) < ?4`,
+    )
+      .bind(hash, t, t - GUEST_IP_LIMIT.windowMs, GUEST_IP_LIMIT.max)
+      .run()
+    if (!res.meta.changes) fail(429, 'too_many_guests')
+  }
   await startSession(c, await createGuest(c.env))
   return c.json({ ok: true })
 })

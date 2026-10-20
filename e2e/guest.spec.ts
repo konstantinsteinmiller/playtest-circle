@@ -157,3 +157,18 @@ test('"Try as guest" says so when the guest account cannot be started', async ({
   await expect(page.getByTestId('guest-error')).toBeVisible()
   await expect(page).toHaveURL(/\/$/)
 })
+
+test('at most 3 guest accounts per IP a day', async ({ browser }) => {
+  // Cloudflare sets cf-connecting-ip in production; here the test sends it.
+  const ip = `203.0.113.${Math.floor(Math.random() * 250) + 1}`
+  const statuses: number[] = []
+  for (let i = 0; i < 4; i++) {
+    const ctx = await browser.newContext({ extraHTTPHeaders: { 'cf-connecting-ip': ip } })
+    statuses.push((await ctx.request.post('/api/auth/guest')).status())
+    await ctx.close()
+  }
+  expect(statuses).toEqual([200, 200, 200, 429])
+  const other = await browser.newContext({ extraHTTPHeaders: { 'cf-connecting-ip': '198.51.100.7' } })
+  expect((await other.request.post('/api/auth/guest')).status()).toBe(200)
+  await other.close()
+})

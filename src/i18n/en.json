@@ -897,7 +897,8 @@
     "unknown_playtest": "That session isn't finished yet, so you can't ask for a replay.",
     "tester_unavailable": "This tester is no longer on Playtest Circle.",
     "replay_already_requested": "You already sent this tester a replay that is still open.",
-    "replay_started": "You already started this replay. Quit it from the playtest page instead."
+    "replay_started": "You already started this replay. Quit it from the playtest page instead.",
+    "too_many_guests": "Too many guest accounts were started from your network today. Please sign in with Google to continue — it takes a few seconds and you get 10 Credits."
   },
   "time": {
     "inHours": "in {n} hours | in {n} hour | in {n} hours",
