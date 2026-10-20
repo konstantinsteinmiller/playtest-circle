@@ -62,6 +62,8 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
   const [gameTab] = await Promise.all([testerCtx.waitForEvent('page'), tester.getByTestId('open-game').click()])
   await gameTab.waitForLoadState()
   await expect(gameTab).toHaveTitle('Fixture Game')
+  await expect(tester.getByTestId('game-opened-next')).toContainText('Start recording')
+  await tester.screenshot({ path: 'test-results/game-opened-next.png' })
   await tester.bringToFront()
 
   await tester.getByTestId('start-recording').click()
@@ -101,6 +103,7 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
   await tester.goto(campaignUrl)
   await expect(tester.getByTestId('earned')).toHaveText('✓ You earned 10 Credits already')
   await expect(tester.getByTestId('reward-card').locator('.pill-credit')).toHaveCount(0)
+// The tester finds the playtest in their studio and can watch their own recording.  await tester.goto('/studio')  await tester.getByTestId('studio-tab-tested').click()  await expect(tester).toHaveURL(/tab=tested/)  await tester.getByTestId('tested-row').first().getByTestId('watch-own').click()  await expect(tester.locator('video')).toBeVisible()  await expect(tester.getByTestId('back-tested')).toBeVisible()
 
   // ---------------------------------------------------------------- dev reviews
   await dev.goto(resultsUrl)

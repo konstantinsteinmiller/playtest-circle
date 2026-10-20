@@ -382,6 +382,9 @@ onBeforeUnmount(() => {
             <button type="button" class="btn btn-secondary w-full" :disabled="!consent || micState === 'asking'" data-testid="open-game" @click="openGame">
               ↗ {{ gameOpened ? $t(stepKey('gameOpened')) : $t(stepKey('openGame')) }}
             </button>
+            <p v-if="gameOpened" class="rounded-xl border-2 border-warn-ink p-3 font-semibold text-warn-ink" role="status" data-testid="game-opened-next">
+              ⚠ {{ $t(stepKey('gameOpenedNext')) }}
+            </p>
           </section>
           <section class="card space-y-3 p-6">
             <h2 class="h3">2 · {{ $t('play.step2') }}</h2>

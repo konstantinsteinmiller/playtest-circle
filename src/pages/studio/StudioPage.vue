@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import GoogleIcon from '@/components/GoogleIcon.vue'
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import { PRICE_MIN, RECORDING_QUOTA_BYTES } from '@shared/rules'
 import type { CampaignCard, Game } from '@shared/types'
 import { api } from '@/lib/api'
-import { formatBytes } from '@/lib/format'
+import { formatBytes, formatDuration } from '@/lib/format'
 import { useSession } from '@/stores/session'
 
 type MyCampaign = CampaignCard & { slotsPaid: number; escrow: number; submitted: number }
@@ -12,14 +14,48 @@ type MyCampaign = CampaignCard & { slotsPaid: number; escrow: number; submitted:
 const session = useSession()
 const games = ref<Game[]>([])
 const campaigns = ref<MyCampaign[]>([])
+interface MyTest {
+  id: string
+  status: string
+  payout_reason: string | null
+  submitted_at: number | null
+  created_at: number
+  active_ms: number | null
+  credits_awarded: number
+  title: string
+  campaign_id: string
+  build_label: string
+  has_recording: number
+}
+
+const { t, d } = useI18n()
+const route = useRoute()
+const router = useRouter()
+const tests = ref<MyTest[]>([])
 const loading = ref(true)
+const tab = computed<'studio' | 'tested'>({
+  get: () => (route.query.tab === 'tested' ? 'tested' : 'studio'),
+  set: (v) => router.replace({ query: v === 'tested' ? { tab: 'tested' } : {} }),
+})
 
 onMounted(async () => {
-  const [g, c] = await Promise.all([api<{ games: Game[] }>('/games'), api<{ campaigns: MyCampaign[] }>('/campaigns/mine'), session.refresh()])
+  const [g, c, p] = await Promise.all([
+    api<{ games: Game[] }>('/games'),
+    api<{ campaigns: MyCampaign[] }>('/campaigns/mine'),
+    api<{ playtests: MyTest[] }>('/playtests/mine'),
+    session.refresh(),
+  ])
   games.value = g.games
   campaigns.value = c.campaigns
+  tests.value = p.playtests
   loading.value = false
 })
+
+function testStatus(x: MyTest) {
+  if (x.status === 'expired') return t('results.status.expired')
+  if (!x.submitted_at) return t('results.status.in_progress')
+  return t(`results.status.${x.payout_reason ?? 'paid'}`)
+}
 
 const used = computed(() => session.me?.recordingBytes ?? 0)
 const usedPct = computed(() => Math.min(100, (used.value / RECORDING_QUOTA_BYTES) * 100))
@@ -46,6 +82,45 @@ const statusClass: Record<string, string> = {
       </div>
     </header>
 
+    <div role="tablist" :aria-label="$t('studio.tabsLabel')" class="flex flex-wrap gap-2">
+      <button
+        v-for="k in ['studio', 'tested'] as const"
+        :key="k"
+        type="button"
+        role="tab"
+        :aria-selected="tab === k"
+        class="btn"
+        :class="tab === k ? 'btn-primary' : 'btn-secondary'"
+        :data-testid="`studio-tab-${k}`"
+        @click="tab = k"
+      >
+        {{ k === 'studio' ? $t('studio.tabStudio') : $t('studio.tabTested', { n: tests.length }) }}
+      </button>
+    </div>
+
+    <section v-if="tab === 'tested'" class="space-y-4" data-testid="tested-list">
+      <p class="text-muted">{{ $t('studio.testedLead') }}</p>
+      <p v-if="!loading && !tests.length" class="card p-6 text-muted">{{ $t('studio.noTested') }}</p>
+      <ul v-else class="space-y-3">
+        <li v-for="x in tests" :key="x.id" class="card flex flex-wrap items-center gap-4 p-4" data-testid="tested-row">
+          <div class="min-w-48 flex-1">
+            <p class="h3">{{ x.title }} <span class="text-base font-medium text-muted">· {{ x.build_label }}</span></p>
+            <p class="text-sm text-muted">
+              {{ d(new Date(x.created_at), { dateStyle: 'medium' } as never) }} · {{ testStatus(x) }}<template v-if="x.active_ms"> · {{ formatDuration(x.active_ms) }}</template>
+              <template v-if="x.submitted_at && !x.has_recording"> · {{ $t('studio.recordingGone') }}</template>
+            </p>
+          </div>
+          <span v-if="x.credits_awarded" class="font-display text-xl font-bold text-primary-ink">+{{ x.credits_awarded }}</span>
+          <RouterLink v-if="['reserved', 'recording'].includes(x.status)" :to="`/play/${x.id}`" class="btn btn-primary">{{ $t('campaign.continuePlaytest') }}</RouterLink>
+          <RouterLink v-else-if="x.submitted_at" :to="`/studio/playtests/${x.id}`" class="btn btn-primary" data-testid="watch-own">
+            {{ x.has_recording ? '▶ ' + $t('studio.watchMine') : $t('studio.viewMine') }}
+          </RouterLink>
+          <RouterLink v-else :to="`/c/${x.campaign_id}`" class="btn btn-secondary">{{ $t('studio.openCampaign') }}</RouterLink>
+        </li>
+      </ul>
+    </section>
+
+    <template v-else>
     <section v-if="session.me?.guest" class="card border-warn-ink p-5" role="status" data-testid="studio-guest-warning">
       <h2 class="h3 text-warn-ink">{{ $t('studio.guestTitle') }}</h2>
       <p class="mt-1">{{ $t('studio.guestBody') }}</p>
@@ -112,5 +187,6 @@ const statusClass: Record<string, string> = {
         </article>
       </div>
     </section>
+    </template>
   </div>
 </template>

@@ -53,7 +53,8 @@ playtestRoutes.get('/mine', async (c) => {
   const u = requireUser(c)
   const { results } = await c.env.DB.prepare(
     `SELECT p.id, p.status, p.credits_awarded, p.payout_reason, p.submitted_at, p.created_at, p.active_ms,
-            g.title, c.id AS campaign_id, c.price
+            g.title, c.id AS campaign_id, c.price, c.build_label, g.cover_key,
+            (p.recording_key IS NOT NULL AND p.recording_deleted_at IS NULL AND p.submitted_at IS NOT NULL) AS has_recording
      FROM playtests p JOIN campaigns c ON c.id = p.campaign_id JOIN games g ON g.id = c.game_id
      WHERE p.tester_id = ? ORDER BY p.created_at DESC LIMIT 100`,
   )

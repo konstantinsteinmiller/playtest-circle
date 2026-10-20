@@ -80,6 +80,7 @@ async function deleteRecording() {
   <p v-else-if="!pt" class="text-muted">{{ $t('common.loading') }}</p>
   <div v-else class="space-y-6">
     <RouterLink v-if="role === 'owner'" :to="`/studio/campaigns/${pt.campaignId}`" class="font-semibold underline">← {{ $t('review.back') }}</RouterLink>
+    <RouterLink v-else to="/studio?tab=tested" class="font-semibold underline" data-testid="back-tested">← {{ $t('studio.backTested') }}</RouterLink>
     <header class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <p class="text-sm font-semibold text-muted">{{ pt.campaign.game.title }} · {{ pt.campaign.buildLabel }}</p>
