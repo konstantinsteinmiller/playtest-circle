@@ -378,13 +378,13 @@ onBeforeUnmount(() => {
         <div class="grid gap-4 md:grid-cols-2">
           <section class="card space-y-3 p-6" :class="gameOpened && 'border-primary-ink'">
             <h2 class="h3">1 · {{ $t('play.step1') }}</h2>
-            <p class="text-muted">{{ $t(stepKey('step1Body')) }}</p>
+            <!-- Said before the click: once the game tab is in front, the tester no longer sees this page. -->
+            <p class="rounded-xl border-2 border-warn-ink p-3 font-semibold text-warn-ink" role="status" data-testid="game-opened-next">
+              ⚠ {{ gameOpened ? $t(stepKey('gameOpenedNext')) : $t(stepKey('openGameFirst')) }}
+            </p>
             <button type="button" class="btn btn-secondary w-full" :disabled="!consent || micState === 'asking'" data-testid="open-game" @click="openGame">
               ↗ {{ gameOpened ? $t(stepKey('gameOpened')) : $t(stepKey('openGame')) }}
             </button>
-            <p v-if="gameOpened" class="rounded-xl border-2 border-warn-ink p-3 font-semibold text-warn-ink" role="status" data-testid="game-opened-next">
-              ⚠ {{ $t(stepKey('gameOpenedNext')) }}
-            </p>
           </section>
           <section class="card space-y-3 p-6">
             <h2 class="h3">2 · {{ $t('play.step2') }}</h2>

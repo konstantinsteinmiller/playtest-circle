@@ -59,11 +59,15 @@ test('dev posts, tester plays and earns, dev reviews and tidies up', async ({ br
   // Mic is asked before the game opens, so recording starts right after the tab is shared.
   await tester.getByTestId('mic').check()
   await expect(tester.getByTestId('mic-state')).toContainText('Microphone ready')
+  // The tester is told to come back before the game tab takes over the screen.
+  await expect(tester.getByTestId('game-opened-next')).toContainText('come back to this tab')
+  await tester.getByTestId('open-game').scrollIntoViewIfNeeded()
+  await tester.screenshot({ path: 'test-results/before-open.png' })
   const [gameTab] = await Promise.all([testerCtx.waitForEvent('page'), tester.getByTestId('open-game').click()])
   await gameTab.waitForLoadState()
   await expect(gameTab).toHaveTitle('Fixture Game')
   await expect(tester.getByTestId('game-opened-next')).toContainText('Start recording')
-  await tester.screenshot({ path: 'test-results/game-opened-next.png' })
+  
   await tester.bringToFront()
 
   await tester.getByTestId('start-recording').click()
