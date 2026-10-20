@@ -2,6 +2,8 @@
 // Every number that decides Credits lives here so both sides agree.
 
 export const WELCOME_GRANT = 10
+/** A guest starts with part of the welcome grant and gets the rest on Google sign-in: 10 either way. */
+export const GUEST_GRANT = 5
 export const PRICE_MIN = 5
 export const PRICE_MAX = 100
 export const SLOTS_MIN = 1

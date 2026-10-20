@@ -52,9 +52,23 @@ test('a guest tests, quits inside the grace window, comments and links Google', 
   await t.bringToFront()
   await t.getByTestId('start-recording').click()
   // Stop just past 2 s: short of the 3 s minimum, but inside the 1 "minute" grace window.
+  // Clicked from inside the page the moment the timer shows 0:02: a round trip from the test runner can
+  // land past 3 s on a busy machine. The confirm dialog no longer counts as playtime.
   t.once('dialog', (d) => d.accept())
-  await expect(t.getByTestId('elapsed')).toHaveText('0:02', { timeout: 10_000 })
-  await t.getByTestId('stop').click()
+  await t.getByTestId('elapsed').evaluate(
+    (el) =>
+      new Promise<void>((done) => {
+        const check = () => {
+          if (el.textContent?.trim() !== '0:02') return
+          observer.disconnect()
+          ;(document.querySelector('[data-testid="stop"]') as HTMLButtonElement).click()
+          done()
+        }
+        const observer = new MutationObserver(check)
+        observer.observe(el, { childList: true, characterData: true, subtree: true })
+        check()
+      }),
+  )
 
   await expect(t.getByTestId('quit-grace-notice')).toBeVisible()
   await expect(t.getByTestId('video-received')).toBeVisible()
@@ -90,7 +104,7 @@ test('a guest tests, quits inside the grace window, comments and links Google', 
   await t.request.post('/api/auth/dev-login', { data: { email: 'gus@example.com', name: 'Gus Tester' } })
   const me = (await (await t.request.get('/api/me')).json()).user
   expect(me.guest).toBe(false)
-  expect(me.credits).toBe(20) // 10 earned + 10 welcome grant
+  expect(me.credits).toBe(20) // 5 guest start + 10 earned + 5 on Google sign-in
   await t.goto(gameUrl)
   await expect(t.getByTestId('comment').first()).toContainText('Gus Tester')
 
@@ -129,7 +143,9 @@ test('"Try as guest" on the landing starts a guest who may open the studio', asy
   await page.goto('/')
   await page.getByTestId('try-guest').click()
   await expect(page).toHaveURL(/\/browse/)
-  expect((await (await page.request.get('/api/me')).json()).user.guest).toBe(true)
+  const guest = (await (await page.request.get('/api/me')).json()).user
+  expect(guest.guest).toBe(true)
+  expect(guest.credits).toBe(5) // half the welcome grant now, the other half on Google sign-in
   await page.goto('/studio')
   await expect(page.getByTestId('studio-guest-warning')).toBeVisible()
 })

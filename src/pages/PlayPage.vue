@@ -238,18 +238,20 @@ async function saveNote() {
 
 async function requestStop() {
   const n = campaign.value?.minMinutes ?? 0
+  // The playtime ends at the click: time spent reading the confirm below doesn't count.
+  const at = recorder?.elapsedMs()
   if (!minReached.value) {
-    const grace = inQuitGrace(elapsed.value, n, minuteMs.value)
+    const grace = inQuitGrace(at ?? elapsed.value, n, minuteMs.value)
     if (!window.confirm(grace ? t('play.stopConfirmGrace', { n, chars: QUIT_REASON_MIN_CHARS }) : t('play.stopConfirmEarly', { n }))) return
   }
-  await finishRecording()
+  await finishRecording(at)
 }
 
-async function finishRecording() {
+async function finishRecording(atMs?: number) {
   if (!recorder || phase.value !== 'recording') return
   if (pendingOffset.value !== null) await saveNote().catch(() => {})
   phase.value = 'finishing'
-  recorderMs.value = recorder.elapsedMs()
+  recorderMs.value = atMs ?? recorder.elapsedMs()
   elapsed.value = recorderMs.value
   await api(`/playtests/${id}/recording/stop`, { method: 'POST', json: { recorderMs: recorderMs.value } }).catch(() => {})
   parts.value = await recorder.stop()

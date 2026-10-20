@@ -1,6 +1,6 @@
 import type { Context, MiddlewareHandler } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
-import { WELCOME_GRANT } from '../../shared/rules'
+import { GUEST_GRANT, WELCOME_GRANT } from '../../shared/rules'
 import type { AppEnv, Env, SessionUser } from '../env'
 import { fail, newId, now, randomToken, sha256 } from '../lib'
 
@@ -87,18 +87,25 @@ export interface Identity {
 }
 
 /**
- * A guest account lives only in its session cookie: no Google identity, no email, no welcome grant.
+ * A guest account lives only in its session cookie: no Google identity, no email, and only part of the welcome grant.
  * It can test and comment; signing in with Google later keeps everything it earned.
  */
 export async function createGuest(env: Env): Promise<string> {
   const id = newId()
   const t = now()
-  await env.DB.prepare(
-    `INSERT INTO users (id, google_sub, email, name, role, credits, email_opt_in, onboarded_at, guest, created_at)
-     VALUES (?, ?, '', ?, 'user', 0, 0, ?, 1, ?)`,
-  )
-    .bind(id, `guest:${id}`, `Guest ${id.slice(0, 4).toUpperCase()}`, t, t)
-    .run()
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO users (id, google_sub, email, name, role, credits, email_opt_in, onboarded_at, guest, created_at)
+       VALUES (?, ?, '', ?, 'user', ?, 0, ?, 1, ?)`,
+    ).bind(id, `guest:${id}`, `Guest ${id.slice(0, 4).toUpperCase()}`, GUEST_GRANT, t, t),
+    env.DB.prepare('INSERT INTO credit_ledger (id, user_id, delta, reason, created_at) VALUES (?, ?, ?, ?, ?)').bind(
+      newId(),
+      id,
+      GUEST_GRANT,
+      'welcome_grant',
+      t,
+    ),
+  ])
   return id
 }
 
@@ -110,10 +117,11 @@ async function mergeGuest(env: Env, guestId: string, targetId: string) {
     env.DB.prepare('UPDATE game_comments SET user_id = ? WHERE user_id = ?').bind(targetId, guestId),
     env.DB.prepare('UPDATE notifications SET user_id = ? WHERE user_id = ?').bind(targetId, guestId),
     env.DB.prepare('UPDATE credit_ledger SET user_id = ? WHERE user_id = ?').bind(targetId, guestId),
+    // Earned Credits move over; the guest's start grant doesn't, since the account already had its welcome grant.
     env.DB.prepare(
-      `UPDATE users SET credits = users.credits + g.credits, rep_up = users.rep_up + g.rep_up, rep_down = users.rep_down + g.rep_down
+      `UPDATE users SET credits = users.credits + MAX(0, g.credits - ?), rep_up = users.rep_up + g.rep_up, rep_down = users.rep_down + g.rep_down
        FROM (SELECT credits, rep_up, rep_down FROM users WHERE id = ?) AS g WHERE users.id = ?`,
-    ).bind(guestId, targetId),
+    ).bind(GUEST_GRANT, guestId, targetId),
     env.DB.prepare(
       "UPDATE users SET credits = 0, rep_up = 0, rep_down = 0, name = 'Merged guest', google_sub = 'merged:' || id, deleted_at = ? WHERE id = ?",
     ).bind(now(), guestId),
@@ -143,14 +151,14 @@ export async function upsertUser(env: Env, id: Identity, guestId: string | null 
       ? env.DB.prepare(
           `UPDATE users SET google_sub = ?, email = ?, name = ?, avatar_url = ?, role = ?, credits = credits + ?,
              email_opt_in = 1, guest = 0 WHERE id = ?`,
-        ).bind(id.sub, id.email, id.name, id.picture, role, WELCOME_GRANT, guestId)
+        ).bind(id.sub, id.email, id.name, id.picture, role, WELCOME_GRANT - GUEST_GRANT, guestId)
       : env.DB.prepare(
           'INSERT INTO users (id, google_sub, email, name, avatar_url, role, credits, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         ).bind(userId, id.sub, id.email, id.name, id.picture, role, WELCOME_GRANT, t),
     env.DB.prepare('INSERT INTO credit_ledger (id, user_id, delta, reason, created_at) VALUES (?, ?, ?, ?, ?)').bind(
       newId(),
       userId,
-      WELCOME_GRANT,
+      guestId ? WELCOME_GRANT - GUEST_GRANT : WELCOME_GRANT,
       'welcome_grant',
       t,
     ),
