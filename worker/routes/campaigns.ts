@@ -25,7 +25,7 @@ import {
 } from '../domain'
 import type { AppEnv } from '../env'
 import { fail, httpUrl, newId, now, parseJson, str } from '../lib'
-import { notify } from '../notify'
+import { alertNewCampaign, notify } from '../notify'
 import { ownerRecordingBytes } from './me'
 
 export const campaignRoutes = new Hono<AppEnv>()
@@ -169,6 +169,7 @@ campaignRoutes.post('/', async (c) => {
     if (String(e).includes('CHECK')) fail(409, 'insufficient_credits')
     throw e
   }
+  c.executionCtx.waitUntil(alertNewCampaign(c.env, id).catch((e) => console.error('[campaign-alert]', e)))
   return c.json({ id })
 })
 

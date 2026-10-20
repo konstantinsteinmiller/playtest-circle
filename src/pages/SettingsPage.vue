@@ -12,6 +12,7 @@ const router = useRouter()
 const { t } = useI18n()
 const errorText = useErrorText()
 const emailOptIn = ref(true)
+const campaignAlerts = ref(false)
 const webhook = ref('')
 const notice = ref('')
 const error = ref('')
@@ -19,12 +20,24 @@ const error = ref('')
 onMounted(async () => {
   await session.refresh()
   emailOptIn.value = session.me?.emailOptIn ?? true
+  campaignAlerts.value = session.me?.campaignAlerts ?? false
   webhook.value = session.me?.discordWebhook ?? ''
 })
 
 async function saveEmail() {
   await api('/me', { method: 'PATCH', json: { emailOptIn: emailOptIn.value } })
   notice.value = t('common.saved')
+}
+
+async function saveAlerts() {
+  error.value = ''
+  try {
+    await api('/me', { method: 'PATCH', json: { campaignAlerts: campaignAlerts.value } })
+    notice.value = t('common.saved')
+  } catch (e) {
+    campaignAlerts.value = false
+    error.value = errorText(e)
+  }
 }
 
 async function saveWebhook() {
@@ -67,6 +80,20 @@ async function deleteAccount() {
         <span>
           <span class="font-semibold">{{ $t('settings.emailOptIn') }}</span>
           <span class="block text-sm text-muted">{{ $t('settings.emailHint', { email: session.me?.email ?? '' }) }}</span>
+        </span>
+      </label>
+      <label class="flex items-start gap-3">
+        <input
+          v-model="campaignAlerts"
+          type="checkbox"
+          class="mt-1 size-5 accent-[var(--c-primary-ink)]"
+          :disabled="session.me?.guest"
+          data-testid="campaign-alerts"
+          @change="saveAlerts"
+        />
+        <span>
+          <span class="font-semibold">{{ $t('settings.campaignAlerts') }}</span>
+          <span class="block text-sm text-muted">{{ session.me?.guest ? $t('settings.campaignAlertsGuest') : $t('settings.campaignAlertsHint') }}</span>
         </span>
       </label>
       <form class="space-y-2" @submit.prevent="saveWebhook">

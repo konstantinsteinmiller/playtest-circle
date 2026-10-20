@@ -219,6 +219,9 @@ export function socialClaimTerms(t: number): { credits: number; maxPerUser: numb
     : { credits: 10, maxPerUser: 1, promo: false }
 }
 
+/** New-campaign alert emails: at most one per this window, and only after the user came back since the last one. */
+export const CAMPAIGN_ALERT_MIN_GAP_MS = 86_400_000
+
 /** A replay the tester hasn't started is cancelled and refunded after this long. */
 export const REPLAY_TTL_MS = 14 * 86_400_000
 

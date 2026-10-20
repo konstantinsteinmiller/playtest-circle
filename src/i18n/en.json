@@ -714,6 +714,9 @@
     "notifications": "Notifications",
     "emailOptIn": "Email me when a playtest of my game is finished",
     "emailHint": "Sent to {email}. Turn it off to check results manually here.",
+    "campaignAlerts": "Email me about new playtests I can earn Credits from",
+    "campaignAlertsHint": "At most one email a day. After an email, the next one only comes once you’ve been back on Playtest Circle.",
+    "campaignAlertsGuest": "Sign in with Google to get these emails — guest accounts have no email address.",
     "discord": "Discord webhook",
     "discordHint": "Paste a channel webhook URL to also get every notification in Discord.",
     "discordTest": "Send test message",
@@ -990,5 +993,11 @@
     "invited": "{studio} asked you to replay {game} and check what they improved since your last session.",
     "decline": "Decline replay",
     "declineConfirm": "Decline this replay? The studio gets its Credits back."
+  },
+  "campaignAlert": {
+    "title": "New playtest: {game}",
+    "body": "A dev just posted {game} for testing. It pays {credits} Credits per finished test — grab a slot before they’re gone.",
+    "open": "See the playtest",
+    "footer": "You get this because new-playtest emails are on in your Playtest Circle settings (at most one a day). Turn them off there at any time."
   }
 }

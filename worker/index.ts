@@ -57,6 +57,21 @@ app.post('/dev/expire-and-cron', async (c) => {
   return c.json({ ok: true })
 })
 
+/** e2e only (DEV_LOGIN=1): a user's new-campaign alert state, and optionally pretend the last alert was a day ago. */
+app.post('/dev/campaign-alert', async (c) => {
+  if (c.env.DEV_LOGIN !== '1') return c.json({ error: 'not_found' }, 404)
+  const { email, ageDay } = (await c.req.json()) as { email: string; ageDay?: boolean }
+  if (ageDay) {
+    await c.env.DB.prepare('UPDATE users SET campaign_alert_at = campaign_alert_at - 90000000, last_seen_at = last_seen_at - 90000000 WHERE email = ?')
+      .bind(email)
+      .run()
+  }
+  const row = await c.env.DB.prepare('SELECT campaign_alert_at, last_seen_at FROM users WHERE email = ?')
+    .bind(email)
+    .first<{ campaign_alert_at: number | null; last_seen_at: number | null }>()
+  return c.json({ alertAt: row?.campaign_alert_at ?? null, seenAt: row?.last_seen_at ?? null })
+})
+
 app.notFound((c) => c.json({ error: 'not_found' }, 404))
 app.onError((err, c) => {
   if (err instanceof HTTPException) return c.json({ error: err.message }, err.status)

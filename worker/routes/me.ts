@@ -27,6 +27,8 @@ meRoutes.get('/me', async (c) => {
   if (now() >= CHEAT.until) await clawBackCheats(c.env.DB, s.id)
   const u = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(s.id).first<Record<string, unknown>>()
   if (!u) return c.json({ user: null })
+  // The app loads /me on every visit: that's what re-arms the new-campaign alert email.
+  await c.env.DB.prepare('UPDATE users SET last_seen_at = ? WHERE id = ?').bind(now(), s.id).run()
   const me: Me = {
     id: u.id as string,
     name: u.name as string,
@@ -44,6 +46,7 @@ meRoutes.get('/me', async (c) => {
     repDown: u.rep_down as number,
     discordWebhook: (u.discord_webhook as string) ?? null,
     emailOptIn: !!u.email_opt_in,
+    campaignAlerts: !!u.campaign_alerts,
     onboarded: !!u.onboarded_at,
     recordingBytes: await ownerRecordingBytes(c.env.DB, s.id),
     cheatRemoved: (u.cheat_notice as number) ?? 0,
@@ -59,7 +62,13 @@ meRoutes.get('/me', async (c) => {
 
 meRoutes.patch('/me', async (c) => {
   const u = requireUser(c)
-  const body = (await c.req.json()) as { discordWebhook?: string | null; emailOptIn?: boolean; onboarded?: boolean; ackCheatNotice?: boolean }
+  const body = (await c.req.json()) as {
+    discordWebhook?: string | null
+    emailOptIn?: boolean
+    campaignAlerts?: boolean
+    onboarded?: boolean
+    ackCheatNotice?: boolean
+  }
   if (body.discordWebhook !== undefined) {
     const v = body.discordWebhook?.trim() || null
     if (v && !/^https:\/\/(discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+$/.test(v)) fail(422, 'invalid_webhook')
@@ -67,6 +76,10 @@ meRoutes.patch('/me', async (c) => {
   }
   if (body.emailOptIn !== undefined) {
     await c.env.DB.prepare('UPDATE users SET email_opt_in = ? WHERE id = ?').bind(body.emailOptIn ? 1 : 0, u.id).run()
+  }
+  if (body.campaignAlerts !== undefined) {
+    if (body.campaignAlerts && u.guest) fail(403, 'google_required')
+    await c.env.DB.prepare('UPDATE users SET campaign_alerts = ? WHERE id = ?').bind(body.campaignAlerts ? 1 : 0, u.id).run()
   }
   if (body.ackCheatNotice) {
     await c.env.DB.prepare('UPDATE users SET cheat_notice = NULL WHERE id = ?').bind(u.id).run()

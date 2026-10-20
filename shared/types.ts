@@ -21,6 +21,8 @@ export interface Me {
   repDown: number
   discordWebhook: string | null
   emailOptIn: boolean
+  /** Email about new campaigns to test (at most daily, re-armed by visiting the app). */
+  campaignAlerts: boolean
   onboarded: boolean
   recordingBytes: number
   /** Cheat Credits removed after the testing period, not yet acknowledged. */
