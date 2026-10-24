@@ -39,26 +39,99 @@ type MicState = 'off' | 'asking' | 'granted' | 'denied'
 const micState = ref<MicState>('off')
 let micStream: MediaStream | null = null
 
+const micDevices = ref<{ id: string; label: string }[]>([])
+const micDeviceId = ref('')
+/** Live input level (0..1) of the mic test, and whether anything audible came in yet. */
+const testLevel = ref(0)
+const heardSound = ref(false)
+const silentTooLong = ref(false)
+let testCtx: AudioContext | null = null
+let testAnalyser: AnalyserNode | null = null
+let silenceTimer: ReturnType<typeof setTimeout> | undefined
+
+const micConstraints = (): MediaStreamConstraints => ({
+  audio: { echoCancellation: true, noiseSuppression: true, ...(micDeviceId.value ? { deviceId: { exact: micDeviceId.value } } : {}) },
+})
+
+function stopMicTest() {
+  clearTimeout(silenceTimer)
+  void testCtx?.close().catch(() => {})
+  testCtx = null
+  testAnalyser = null
+  testLevel.value = 0
+  heardSound.value = false
+  silentTooLong.value = false
+}
+
+function startMicTest() {
+  stopMicTest()
+  if (!micStream) return
+  testCtx = new AudioContext()
+  void testCtx.resume()
+  testAnalyser = testCtx.createAnalyser()
+  testAnalyser.fftSize = 512
+  testCtx.createMediaStreamSource(micStream).connect(testAnalyser)
+  silenceTimer = setTimeout(() => {
+    if (!heardSound.value) silentTooLong.value = true
+  }, 4000)
+}
+
+useRafFn(() => {
+  if (!testAnalyser) return
+  const data = new Uint8Array(testAnalyser.fftSize)
+  testAnalyser.getByteTimeDomainData(data)
+  let peak = 0
+  for (const v of data) peak = Math.max(peak, Math.abs(v - 128))
+  testLevel.value = Math.min(1, peak / 64)
+  if (testLevel.value > 0.04 && !heardSound.value) {
+    heardSound.value = true
+    silentTooLong.value = false
+  }
+})
+
+async function refreshMicDevices() {
+  const all = await navigator.mediaDevices.enumerateDevices().catch(() => [])
+  micDevices.value = all.filter((d) => d.kind === 'audioinput' && d.deviceId !== 'communications').map((d, i) => ({ id: d.deviceId, label: d.label || `#${i + 1}` }))
+  const live = micStream?.getAudioTracks()[0]?.getSettings().deviceId
+  if (live && !micDeviceId.value) micDeviceId.value = live
+}
+
 function releaseMic() {
+  stopMicTest()
   micStream?.getTracks().forEach((t) => t.stop())
   micStream = null
 }
 
+async function acquireMic() {
+  micStream?.getTracks().forEach((t) => t.stop())
+  micStream = null
+  micState.value = 'asking'
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia(micConstraints())
+    if (!withMic.value) {
+      releaseMic()
+      return
+    }
+    micState.value = 'granted'
+    await refreshMicDevices()
+    startMicTest()
+  } catch {
+    stopMicTest()
+    micState.value = 'denied'
+  }
+}
+
 // Ask for the microphone right when the tester opts in, before the game and the share dialog.
-watch(withMic, async (on) => {
+watch(withMic, (on) => {
   if (!on) {
     releaseMic()
     micState.value = 'off'
     return
   }
-  micState.value = 'asking'
-  try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
-    if (!withMic.value) releaseMic()
-    else micState.value = 'granted'
-  } catch {
-    micState.value = 'denied'
-  }
+  void acquireMic()
+})
+watch(micDeviceId, (id, prev) => {
+  if (withMic.value && prev && id !== prev) void acquireMic()
 })
 const gameOpened = ref(false)
 /** Steam games run outside the browser: open the store/launch page and record the game window instead of a tab. */
@@ -193,8 +266,11 @@ async function startRecording() {
     if (withMic.value && micStream && micStream.getAudioTracks().every((t) => t.readyState === 'ended')) {
       micStream = null
       navigator.mediaDevices
-        .getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
-        .then((s) => (micStream = s))
+        .getUserMedia(micConstraints())
+        .then((s) => {
+          micStream = s
+          startMicTest()
+        })
         .catch(() => (micState.value = 'denied'))
     }
     error.value = e instanceof WrongSurfaceError ? t('play.wrongSurface') : t('play.permissionDenied')
@@ -208,6 +284,7 @@ async function startRecording() {
     error.value = errorText(e)
     return
   }
+  stopMicTest()
   if (recorder.micFailed) notice.value = t('play.micDenied')
   hasMic.value = recorder.hasMic
   notes.value = []
@@ -307,6 +384,7 @@ useEventListener(window, 'beforeunload', (e: BeforeUnloadEvent) => {
   }
 })
 onBeforeUnmount(() => {
+  stopMicTest()
   void recorder?.stop()
   if (!recorder) releaseMic()
 })
@@ -373,6 +451,18 @@ onBeforeUnmount(() => {
               </span>
             </span>
           </label>
+          <div v-if="micState === 'granted'" class="space-y-2 rounded-xl border-2 border-info-ink p-3" data-testid="mic-test">
+            <p class="font-semibold text-info-ink">🎙 {{ $t('play.mic.testTitle') }}</p>
+            <select v-if="micDevices.length > 1" v-model="micDeviceId" class="input w-full" :aria-label="$t('play.mic.device')" data-testid="mic-device">
+              <option v-for="d in micDevices" :key="d.id" :value="d.id">{{ d.label }}</option>
+            </select>
+            <div class="h-3 overflow-hidden rounded-full bg-surface-2" role="meter" :aria-label="$t('play.micLevel')" :aria-valuenow="Math.round(testLevel * 100)" aria-valuemin="0" aria-valuemax="100" data-testid="mic-meter">
+              <div class="h-full bg-primary" :style="{ width: `${testLevel * 100}%` }" />
+            </div>
+            <p v-if="heardSound" class="text-sm font-semibold text-primary-ink" role="status" data-testid="mic-heard">✓ {{ $t('play.mic.heard') }}</p>
+            <p v-else-if="silentTooLong" class="text-sm font-semibold text-warn-ink" role="alert" data-testid="mic-silent">⚠ {{ $t('play.mic.silent') }}</p>
+            <p v-else class="text-sm text-muted">{{ $t('play.mic.testHint') }}</p>
+          </div>
         </section>
 
         <div class="grid gap-4 md:grid-cols-2">

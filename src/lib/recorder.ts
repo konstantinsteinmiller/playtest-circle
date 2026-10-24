@@ -113,6 +113,7 @@ export class TabRecorder {
     // Mix tab audio and mic into one track; MediaRecorder records only the first audio track.
     const ctx = new AudioContext()
     this.audioCtx = ctx
+    await ctx.resume().catch(() => {})
     const dest = ctx.createMediaStreamDestination()
     const tabAudio = this.display.getAudioTracks()[0]
     if (tabAudio) ctx.createMediaStreamSource(new MediaStream([tabAudio])).connect(dest)

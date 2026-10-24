@@ -289,7 +289,12 @@
     "mic": {
       "asking": "Allow the microphone in the browser prompt…",
       "granted": "✓ Microphone ready — it starts recording together with the tab.",
-      "denied": "Microphone blocked — you can still play; only the tab is recorded."
+      "denied": "Microphone blocked — you can still play; only the tab is recorded.",
+      "testTitle": "Microphone test",
+      "testHint": "Say something. The bar should move while you talk.",
+      "heard": "We can hear you — your voice will be in the recording.",
+      "silent": "No sound is coming in. Pick another microphone below, check it isn't muted (also in Windows sound settings), then talk again.",
+      "device": "Microphone"
     },
     "received": {
       "ok": "Your video arrived ({mb} MB). Answer the questions to earn your Credits.",
